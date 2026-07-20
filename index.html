@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세금계산서 취소/정산 CS 진단 도구</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --ink:#1a2233; --sub:#5b6b86; --line:#e3e8f2;
+    --brand:#2f6bff; --brand-d:#1f4fd6; --ok:#16a06a; --warn:#e08600; --danger:#d94a4a;
+    --chip:#eef3ff; --escalate:#fff3e6; --answer:#e9f7f0; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  header{background:linear-gradient(135deg,#2f6bff,#5b8bff);color:#fff;padding:18px 22px;position:sticky;top:0;z-index:20;box-shadow:0 2px 12px rgba(30,60,120,.15);transition:background .25s}
+  /* 테스트 모드: 헤더를 주황색으로 전환해 즉시 식별 */
+  body.testmode header{background:linear-gradient(135deg,#d97a00,#f0a44a);box-shadow:0 2px 12px rgba(180,110,0,.25)}
+  .testflag{display:inline-flex;align-items:center;gap:5px;background:#fff;color:#c05600;font-weight:800;font-size:12px;padding:4px 11px;border-radius:20px}
+  .hrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;max-width:1080px;margin:0 auto}
+  header h1{font-size:19px;margin:0;font-weight:700;flex:1;min-width:220px}
+  .modewrap{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:5px 8px;border-radius:30px;font-size:13px}
+  .switch{position:relative;width:150px;height:32px;background:rgba(0,0,0,.18);border-radius:30px;cursor:pointer;user-select:none}
+  .switch span{position:absolute;top:0;height:32px;line-height:32px;width:50%;text-align:center;font-size:12.5px;font-weight:600;z-index:2;color:#eaf0ff}
+  .switch .real{left:0}.switch .test{right:0}
+  .switch .knob{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:26px;background:#fff;border-radius:30px;transition:.22s;z-index:1;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  .switch.test-on .knob{left:calc(50%)}
+  .switch.test-on .test{color:#c85b00}.switch:not(.test-on) .real{color:#1f4fd6}
+  nav{max-width:1080px;margin:0 auto;display:flex;gap:6px;padding:10px 22px 0}
+  nav button{border:0;background:transparent;padding:10px 16px;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;border-radius:8px 8px 0 0}
+  nav button.active{color:var(--brand);border-bottom-color:var(--brand);background:#fff}
+  main{max-width:1080px;margin:0 auto;padding:20px 22px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,40,90,.04)}
+  .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-size:14px;font-weight:700;margin-right:9px}
+  .q{font-size:16.5px;font-weight:700;margin:2px 0 14px;display:flex;align-items:center}
+  .hint{font-size:13px;color:var(--sub);margin:-8px 0 14px 35px}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:.12s;font-size:15px;display:flex;align-items:flex-start;gap:10px}
+  .opt:hover{border-color:var(--brand);background:var(--chip)}
+  .opt.sel{border-color:var(--brand);background:var(--chip);box-shadow:0 0 0 3px rgba(47,107,255,.12)}
+  .opt b{display:block;font-weight:700;font-size:15.5px;color:var(--ink)}
+  .opt small{display:block;color:var(--sub);font-weight:400;font-size:13px;margin-top:3px;line-height:1.4}
+  .radiodot{width:18px;height:18px;border-radius:50%;border:2px solid #b8c4dc;margin-top:2px;flex:0 0 auto}
+  .opt.sel .radiodot{border-color:var(--brand);background:radial-gradient(circle,#2f6bff 42%,transparent 46%)}
+  .daterow{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:13px;color:var(--sub);font-weight:600}
+  input[type=date]{border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit}
+  .autoinfo{font-size:13px;background:#f0f5ff;border:1px solid #d6e2ff;border-radius:10px;padding:11px 13px;margin-top:8px;color:#274b9e}
+  .autoinfo b{color:#1f3f8f}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  button.act{border:0;border-radius:10px;padding:11px 20px;font-size:14.5px;font-weight:700;cursor:pointer}
+  .primary{background:var(--brand);color:#fff}.primary:hover{background:var(--brand-d)}
+  .ghost{background:#eef1f7;color:var(--ink)}.ghost:hover{background:#e2e7f0}
+  .badge{display:inline-block;padding:4px 11px;border-radius:30px;font-size:12.5px;font-weight:700;margin-right:6px}
+  .b-case{background:#eae3ff;color:#5a34c9}
+  .b-esc{background:var(--escalate);color:#c07100}
+  .b-ans{background:var(--answer);color:#0f8055}
+  .b-time{background:#e3f0ff;color:#1f5bc4}
+  .result h2{font-size:18px;margin:0 0 4px}
+  /* 이관 여부 판단 결과 - 상단 강조 배너 */
+  .verdict{display:flex;align-items:center;gap:16px;border-radius:14px;padding:18px 20px;margin-bottom:18px;border:2px solid}
+  .verdict.v-esc{background:linear-gradient(180deg,#fff7ee,#fff1e0);border-color:#f0a44a}
+  .verdict.v-ans{background:linear-gradient(180deg,#effaf4,#e6f7ee);border-color:#5cc493}
+  .v-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;flex:0 0 auto;font-weight:800}
+  .v-esc .v-icon{background:#e08600}.v-ans .v-icon{background:#16a06a}
+  .v-main{flex:1;min-width:180px}
+  .v-title{font-size:20px;font-weight:800;line-height:1.25}
+  .v-esc .v-title{color:#b8670a}.v-ans .v-title{color:#0f7a52}
+  .v-sub{font-size:13.5px;color:var(--sub);margin-top:3px}
+  .v-tags{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  @media(max-width:560px){.verdict{flex-wrap:wrap}.v-tags{flex-direction:row;width:100%;align-items:flex-start;margin-top:4px}}
+  /* 이관 절차 - 순서형 스텝 */
+  .proc{display:flex;flex-direction:column}
+  .pstep{display:flex;gap:14px;padding-bottom:20px;position:relative}
+  .pstep:not(:last-child)::before{content:"";position:absolute;left:16px;top:36px;bottom:2px;width:2px;background:#f0c48a}
+  .pnum{width:34px;height:34px;border-radius:50%;background:#e08600;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:15px;z-index:1}
+  .pbody{flex:1;padding-top:4px;min-width:0}
+  .plabel{font-weight:800;font-size:15.5px;margin-bottom:5px;color:#25324a}
+  .resbar{padding:14px 16px;border-radius:12px;margin-bottom:16px}
+  .resbar.esc{background:var(--escalate);border:1px solid #ffd9a8}
+  .resbar.ans{background:var(--answer);border:1px solid #b7e6cf}
+  .resbar .big{font-size:16px;font-weight:800;margin-bottom:2px}
+  .sect{margin:16px 0}
+  .sect h3{font-size:14px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin:0 0 7px}
+  .scriptbox{background:#f7f9fd;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:8px;padding:14px 15px;font-size:14.5px;white-space:pre-wrap;position:relative}
+  .genflag{position:absolute;top:8px;right:10px;font-size:11px;background:#fff2d6;color:#a86800;padding:2px 8px;border-radius:20px;font-weight:700}
+  /* 내부 대응 지침 - 스크립트와 시각적으로 명확히 구분 */
+  .guidebox{background:#f0f5ff;border:1px solid #d6e2ff;border-radius:10px;padding:14px 16px;position:relative}
+  .guidebox .ghd{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#1f4fd6;letter-spacing:.3px;margin-bottom:9px;text-transform:uppercase}
+  .guidebox ul{margin:0;padding-left:20px}
+  .guidebox li{font-size:14.5px;margin:5px 0;color:#25324a}
+  .scriptwrap .shd{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#0f8055;letter-spacing:.3px;margin-bottom:7px;text-transform:uppercase}
+  .scriptbox.customer{background:#fff;border-color:#b7e6cf;border-left-color:#16a06a}
+  .scriptbox.customer::before{content:'\201C';position:absolute;top:2px;left:8px;font-size:34px;color:#b7e6cf;font-family:Georgia,serif;line-height:1}
+  .scriptbox.customer .qbody{padding-left:20px;display:block}
+  /* 읽기 전용 정보 표시 (자동 확정) - 중립 회색, 선택 UI와 구분 */
+  .determined{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f4f6fb;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .det-badge{font-size:14.5px;font-weight:800;color:#3b4557;background:#fff;border:1.5px solid #c3ccdd;border-radius:20px;padding:5px 14px}
+  .det-badge.full{color:#1f5bc4;border-color:#9dc0ff}
+  .det-badge.partial{color:#b06a00;border-color:#f0c48a;background:#fff9f0}
+  .det-reason{font-size:13.5px;color:var(--sub);flex:1;min-width:140px}
+  /* 섹션 헤더 구분 칩: 자동(회색) vs 선택(파랑) */
+  .hchip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;letter-spacing:0;text-transform:none}
+  .hchip.auto{background:#eceff5;color:#6b7890}
+  .hchip.select{background:#e3f0ff;color:#1f5bc4}
+  .h3sub{font-weight:400;text-transform:none;letter-spacing:0;color:var(--sub)}
+  /* 세금계산서 상태 추천 카드 (오늘 날짜 기준 자동 계산) */
+  .recinfo{background:#f0f5ff;border:1px solid #d6e2ff;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .recinfo-head{font-size:13px;font-weight:800;color:#1f4fd6;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .recinfo-date{font-weight:600;color:#4f6dc0;background:#fff;border:1px solid #cdddff;border-radius:14px;padding:2px 9px;font-size:11.5px}
+  .recinfo-row{display:flex;gap:12px;font-size:14px;padding:3px 0;align-items:center}
+  .recinfo-k{color:var(--sub);min-width:100px;font-weight:600}
+  .recinfo-v{color:var(--ink);font-weight:700}
+  .recinfo-note{font-size:12.5px;color:#5b6b86;margin-top:10px;line-height:1.55;border-top:1px dashed #cdddff;padding-top:9px}
+  .minibtn{font-size:11.5px;font-weight:700;color:var(--brand);background:#eef3ff;border:1px solid #d6e2ff;border-radius:16px;padding:2px 10px;cursor:pointer;margin-left:8px}
+  .minibtn:hover{background:#dfe9ff}
+  .recbadge{display:inline-block;font-size:11px;font-weight:800;background:#16a06a;color:#fff;padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle}
+  .opt .recbadge{margin-left:auto;align-self:center}
+  .opt.recommended{border-color:#16a06a;background:#eefaf3}
+  .opt.recommended .radiodot{border-color:#16a06a}
+  .copybtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;font-weight:600;color:var(--brand)}
+  .copybtn:hover{background:var(--chip)}
+  ul.clean{margin:6px 0;padding-left:20px}ul.clean li{margin:4px 0}
+  .checklist label{display:flex;align-items:center;gap:9px;padding:8px 0;font-size:14.5px;border-bottom:1px dashed var(--line)}
+  .checklist input{width:18px;height:18px}
+  .usebar{margin-top:20px;padding:16px;border-radius:12px;background:#f7f9fd;border:1px dashed var(--line)}
+  .usebar.testmode{background:#fff8ec;border-color:#ffd9a8}
+  .confirmed{background:var(--answer)!important;border-color:#b7e6cf!important}
+  .src-chip{display:inline-block;font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px}
+  .src-chip.ok{background:#e9f7f0;color:#0f8055}
+  .src-chip.local{background:#fff8ec;color:#a86800}
+  .src-chip.warn{background:#fdeaea;color:#c0392b}
+  .src-chip.loading{background:#eef3ff;color:#3a5bbf}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:18px}
+  .stat{background:#f7f9fd;border:1px solid var(--line);border-radius:12px;padding:16px}
+  .stat .n{font-size:28px;font-weight:800;color:var(--brand)}
+  .stat .l{font-size:13px;color:var(--sub);margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+  th{color:var(--sub);font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
+  td .mini{font-size:12px;color:var(--sub)}
+  .pill{font-size:11.5px;padding:2px 8px;border-radius:20px;font-weight:700}
+  .pill.r{background:var(--answer);color:#0f8055}.pill.t{background:#fff2d6;color:#a86800}
+  .guide h3{color:var(--brand);border-bottom:2px solid var(--chip);padding-bottom:6px;margin-top:26px}
+  .guide h4{margin:16px 0 4px;font-size:15px}
+  .guide p,.guide li{font-size:14px}
+  .guide .box{background:#f7f9fd;border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:8px 0}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2233;color:#fff;padding:11px 20px;border-radius:30px;font-size:14px;opacity:0;transition:.25s;z-index:50;pointer-events:none}
+  .toast.show{opacity:1}
+  .hide{display:none!important}
+  .backbtn{background:none;border:0;color:var(--sub);font-size:13.5px;cursor:pointer;padding:0;margin-bottom:6px}
+  .flowmap{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-bottom:14px}
+  .flowmap span{background:#eef1f7;padding:3px 10px;border-radius:20px}
+  .flowmap span.on{background:var(--brand);color:#fff}
+  .warnnote{font-size:13px;color:#a86800;background:#fff8ec;border:1px solid #ffe4b8;border-radius:8px;padding:9px 12px;margin-top:8px}
+  a.link{color:var(--brand)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>세금계산서 취소/정산 · CS 진단 도구</h1>
+    <span id="testFlag" class="testflag hide">🧪 테스트 모드</span>
+    <div class="modewrap">
+      <div class="switch" id="modeSwitch" onclick="toggleMode()" title="테스트 모드에서 확정한 답변은 실제 통계에서 제외됩니다">
+        <div class="knob"></div>
+        <span class="real">실제 응대</span>
+        <span class="test">테스트</span>
+      </div>
+    </div>
+  </div>
+</header>
+<nav>
+  <button id="tab-diag" class="active" onclick="showTab('diag')">진단 · 응대</button>
+  <button id="tab-stats" onclick="showTab('stats')">통계 대시보드</button>
+  <button id="tab-guide" onclick="showTab('guide')">가이드 원문</button>
+</nav>
+<main>
+  <!-- ============ 진단 탭 ============ -->
+  <section id="view-diag">
+    <div class="flowmap" id="flowmap"></div>
+    <div id="wizard"></div>
+  </section>
+
+  <!-- ============ 통계 탭 ============ -->
+  <section id="view-stats" class="hide">
+    <div class="card">
+      <div id="statSource" style="margin-bottom:14px"></div>
+      <div class="stat-grid" id="statCards"></div>
+      <div class="btnrow">
+        <button class="act ghost" onclick="exportCSV()">CSV 내보내기</button>
+        <button class="act ghost" onclick="clearStats()">기록 초기화</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--sub)">케이스별 실제 사용 횟수</h3>
+      <table id="caseTable"></table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--sub)">최근 응대 기록 (최신 30건)</h3>
+      <table id="logTable"></table>
+    </div>
+  </section>
+
+  <!-- ============ 가이드 탭 ============ -->
+  <section id="view-guide" class="hide">
+    <div class="card guide" id="guideBody"></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   상태
+========================================================= */
+let state = {};
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function resetState(){
+  state = { mode: state.mode||'real', page:1, case1:null, case1still:null,
+    elapsed:null, paymentDate:'', serviceStart:'', requestDate:todayStr(), timing:null, timingAuto:null, intent:null };
+}
+resetState();
+
+/* =========================================================
+   공용 DB 설정 (Supabase) — 팀 전체 통계 취합용
+   아래 두 값을 채우면 모든 담당자 기록이 한 곳에 합산됩니다.
+   비워두면 각 기기 로컬(localStorage)에만 저장됩니다.
+   설정 방법은 "통계 취합 설정 안내.md" 참고.
+========================================================= */
+const SUPABASE_URL  = 'https://lvaoytldzxzwnmfvkruc.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_-kHQ_O_7LjSNKHrxuv9skg_smk-O09K';
+const DB = {
+  url: SUPABASE_URL.replace(/\/+$/,''), key: SUPABASE_ANON_KEY,
+  get enabled(){ return !!(this.url && this.key); }
+};
+async function dbInsert(row){
+  const r=await fetch(DB.url+'/rest/v1/cs_logs',{method:'POST',
+    headers:{'apikey':DB.key,'Authorization':'Bearer '+DB.key,'Content-Type':'application/json','Prefer':'return=representation'},
+    body:JSON.stringify(row)});
+  if(!r.ok) throw new Error('insert '+r.status);
+  const j=await r.json().catch(()=>null);
+  return (j&&j[0]&&j[0].id)||null;
+}
+async function dbDelete(id){
+  const r=await fetch(DB.url+'/rest/v1/cs_logs?id=eq.'+encodeURIComponent(id),{method:'DELETE',
+    headers:{'apikey':DB.key,'Authorization':'Bearer '+DB.key}});
+  if(!r.ok) throw new Error('delete '+r.status);
+}
+async function dbFetch(){
+  const r=await fetch(DB.url+'/rest/v1/cs_logs?select=*&order=ts.desc&limit=5000',
+    {headers:{'apikey':DB.key,'Authorization':'Bearer '+DB.key}});
+  if(!r.ok) throw new Error('fetch '+r.status);
+  return await r.json();
+}
+function normalizeLog(row){
+  return { ts: (typeof row.ts==='number'? row.ts : Date.parse(row.ts)),
+    mode: row.mode, caseLabel: row.caseLabel||row.case_label, situation: row.situation,
+    escalate: !!row.escalate, generated: !!row.generated };
+}
+
+/* =========================================================
+   날짜 로직: 결제일 기준 세금계산서 상태 타이밍 자동 판별
+   - 발행 전: 결제 당월 ~ 익월 1일 23:59
+   - 발행확정·마감 전: 익월 2일 ~ 익월 5영업일 15시
+   - 마감 후: 익월 5영업일 15시 이후
+========================================================= */
+function nthBusinessDay(year, month0, n){ // month0: 0-based
+  let d = new Date(year, month0, 1), count=0;
+  while(true){
+    const day = d.getDay();
+    if(day!==0 && day!==6){ count++; if(count===n) return new Date(d); }
+    d.setDate(d.getDate()+1);
+  }
+}
+function computeTiming(paymentStr, requestStr){
+  if(!paymentStr) return null;
+  const pay = new Date(paymentStr+'T00:00:00');
+  const req = requestStr ? new Date(requestStr+'T12:00:00') : new Date();
+  const ny = pay.getFullYear() + (pay.getMonth()===11?1:0);
+  const nm = (pay.getMonth()+1)%12; // 익월 (0-based)
+  const beforeEnd = new Date(ny, nm, 1, 23, 59, 59);           // 익월 1일 23:59
+  const close = nthBusinessDay(ny, nm, 5); close.setHours(15,0,0,0); // 익월 5영업일 15시
+  let timing, label;
+  if(req <= beforeEnd){ timing='before'; }
+  else if(req < close){ timing='confirmed'; }
+  else { timing='closed'; }
+  const fmt = d=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  return { timing,
+    beforeEnd: fmt(beforeEnd),
+    confirmedStart: fmt(new Date(ny,nm,2)),
+    close: fmt(close)+' 15:00',
+    req: fmt(req) };
+}
+
+/* =========================================================
+   환불 조건(전액/부분) 자동 추천 — 서비스 시작일 기준
+   · 서비스 시작일부터 7일 이내: 전액환불 (케이스2)
+   · 서비스 시작일 전 미리 결제한 기간연장분: 전액환불 (케이스2)
+   · 서비스 시작 8일째부터: 부분환불 (케이스3)
+========================================================= */
+function recommendElapsed(){
+  if(!state.serviceStart) return null;
+  const start=new Date(state.serviceStart+'T00:00:00');
+  const req=new Date((state.requestDate||todayStr())+'T00:00:00');
+  const diff=Math.floor((req-start)/86400000); // 일 단위
+  let rec, reason, prepay=false;
+  if(diff<0){ rec='within7'; prepay=true; reason='요청일이 서비스 시작일 이전 → 기간연장 선결제분, 전액환불 대상'; }
+  else if(diff<7){ rec='within7'; reason=`서비스 시작 ${diff+1}일차 (7일 이내) → 전액환불 대상`; }
+  else{ rec='over7'; reason=`서비스 시작 ${diff+1}일차 (8일 이상 경과) → 부분환불 대상`; }
+  return { rec, reason, prepay };
+}
+
+/* =========================================================
+   결과 매핑 (가이드 기반)
+   generated:true = 가이드에 스크립트 미기재 → 생성본
+========================================================= */
+const TIMING_LABEL = {before:'발행 전 (결제 당월~익월 1일)', confirmed:'발행 확정·회계 마감 전 (익월 2일~5영업일 15시)', closed:'회계 마감 후 (익월 5영업일 15시 이후)'};
+
+function computeResult(s){
+  // 케이스 1 우선 게이트
+  if(s.case1==='yes' && s.case1still==='no'){
+    return {
+      caseLabel:'카드 증빙 중복 문의',
+      situationLabel:'1차 안내로 종결',
+      timingLabel:null,
+      escalate:false,
+      csGuide:'다음메일은 카드매출전표를 발행하지 않으므로 증빙 중복 발행이 발생하지 않음을 안내. 발행된 세금계산서로 매출 증빙이 가능함을 설명하여 종결.',
+      csScript:'고객님, 세금계산서는 직접 신청하신 경우에 발행되며 매출신고이기 때문에 모든 거래유형에 지원하고 있습니다. 이에 카드결제 시에도 증빙이 중복 발행되지 않도록 카드매출전표는 발행하지 않고 있어 고객님은 발행된 세금계산서로 매출 증빙이 가능하시고, 카드매출전표는 발행되지 않으셨습니다.',
+      generated:false, checklist:[], plannerAction:'해당 없음 (CS 종결)'
+    };
+  }
+  // 케이스 1 후에도 취소 희망 → 케이스 2/3 실제 처리로 진행
+  const c1note = s.case1==='yes' ? '※ 카드 증빙중복 1차 안내 후에도 취소를 계속 희망하여 실제 처리 단계로 진행된 건. ' : '';
+
+  const caseNo = s.elapsed==='within7' ? 2 : 3;
+  const caseTitle = caseNo===2 ? '전액 환불 기간 (결제 후 7일 이내)' : '부분 환불 기간 (8일 이상 경과)';
+  const t = s.timing;
+  const timingLabel = TIMING_LABEL[t];
+  const CHK = ['결제 정보(결제일·결제수단·금액)','사업자등록증'];
+
+  // ---- 케이스 2 ----
+  if(caseNo===2){
+    if(t==='before') return {
+      caseLabel:caseTitle, situationLabel:'상황 A · 발행 전 요청', timingLabel, escalate:false,
+      csGuide:c1note+'결제 취소 시 전액 환불되며 세금계산서 신청이 자동 취소됨을 안내. (CS 종결 가능)',
+      csScript:'고객님, 결제 취소를 진행하시면 세금계산서 발급 신청도 자동으로 함께 취소 처리됩니다.',
+      generated:false, checklist:[], plannerAction:'별도 조치 없음'
+    };
+    if(t==='confirmed'){
+      if(s.intent==='proofOnly') return {
+        caseLabel:caseTitle, situationLabel:'상황 B-① · 발행확정·마감 전 / 증빙만 취소', timingLabel, escalate:true,
+        csGuide:c1note+'결제 취소 없이 증빙만 취소 가능함을 안내. 결제정보·사업자등록증 확인 후 기획자에 이관.',
+        csScript:'고객님, 현재 세금계산서 발행이 확정되었으나 회계 마감 전이므로 결제 취소 없이 세금계산서 발행만 취소 처리가 가능합니다. 정확한 처리를 위해 결제 정보와 사업자등록증을 확인 후 담당 부서를 통해 취소 접수를 도와드리겠습니다.',
+        generated:true, checklist:CHK, plannerAction:'재무팀 전달 — 내용 공유 및 「세금계산서 발행 취소 요청서」 상신'
+      };
+      return { // both
+        caseLabel:caseTitle, situationLabel:'상황 B-② · 발행확정·마감 전 / 결제취소+증빙취소', timingLabel, escalate:false,
+        csGuide:c1note+'결제 취소 진행 시 결제 취소일(세법상 계약해제일) 기준 익월 초에 (-) 세금계산서가 발행됨을 안내. (CS 종결 가능, 기획자 별도 조치 없음)',
+        csScript:'고객님, 결제 취소를 진행하시면 결제 취소일(세법상 계약 해제일)을 기준으로 익월 초에 마이너스(-) 세금계산서가 발행되어 상계 처리됩니다. 별도의 증빙 취소 접수 없이 자동으로 처리되오니 참고 부탁드립니다.',
+        generated:true, checklist:[], plannerAction:'별도 조치 없음'
+      };
+    }
+    // closed
+    return {
+      caseLabel:caseTitle, situationLabel:'상황 C · 회계 마감 후 요청', timingLabel, escalate:false,
+      csGuide:c1note+'회계 마감되어 결제 취소하셔야 증빙 취소 진행됨을 안내. 이미 취소한 경우 포함, 결제 취소일 기준 익월 초 (-) 발행.',
+      csScript:'고객님, 현재 회계 마감이 완료되어 결제 취소를 진행하셔야 증빙 취소가 가능합니다. 이미 결제를 취소하신 경우를 포함하여, 결제 취소일(세법상 계약 해제일)을 기준으로 익월 초에 마이너스(-) 세금계산서가 발행되어 상계 처리됩니다.',
+      generated:true, checklist:[], plannerAction:'별도 조치 없음'
+    };
+  }
+
+  // ---- 케이스 3 ----
+  if(t==='before') return {
+    caseLabel:caseTitle, situationLabel:'상황 A · 발행 전 요청', timingLabel, escalate:true,
+    csGuide:c1note+'아직 발행 전이므로 결제취소 없이 증빙만 취소 가능함을 안내. 결제정보·사업자등록증 확인 후 기획자에 이관.',
+    csScript:'고객님, 아직 세금계산서 발행 전이므로 결제 취소 없이 증빙만 취소 처리가 가능합니다. 처리를 위해 결제 정보와 사업자등록증을 확인 후 담당 부서를 통해 취소 접수를 도와드리겠습니다. (결제 당월 내 처리가 필요한 점 참고 부탁드립니다.)',
+    generated:true, checklist:CHK,
+    plannerAction:'(반드시 결제 당월까지) DB에서 세금계산서 요청 취소 및 CS tool 내 건별과세 반영되도록 개발자 요청 / 재무팀에 슬랙으로 내용 공유'
+  };
+  if(t==='confirmed'){
+    if(s.intent==='proofOnly') return {
+      caseLabel:caseTitle, situationLabel:'상황 B-① · 발행확정·마감 전 / 증빙만 취소', timingLabel, escalate:true,
+      csGuide:c1note+'회계 마감 전이므로 결제 취소 없이 발행 취소 가능함을 안내. 결제정보·사업자등록증 확인 후 기획자에 이관.',
+      csScript:'고객님, 현재 회계 마감 전이므로 결제 취소 없이 세금계산서 발행 취소가 가능합니다. 처리를 위해 결제 정보와 사업자등록증을 확인 후 담당 부서를 통해 취소 접수를 도와드리겠습니다.',
+      generated:true, checklist:CHK, plannerAction:'재무팀 전달 — 내용 공유 및 「세금계산서 발행 취소 요청서」 상신'
+    };
+    return { // both
+      caseLabel:caseTitle, situationLabel:'상황 B-② · 발행확정·마감 전 / 결제취소+증빙취소', timingLabel, escalate:true,
+      csGuide:c1note+'대체 증빙 발행 회신 시 증빙 취소 가능. 미요청 시 결제취소일 기준 익월 초 사용분만큼 수정 발행 예정 안내. 사용금액은 카드사/PG사에서 타 증빙 발급받아 회신하도록 안내.',
+      csScript:'고객님, 현재 세금계산서 발행이 진행되었습니다. 증빙 취소를 원하실 경우 원본 발행 이후 마이너스(-) 처리를 거쳐야 하며, 타 증빙(카드매출전표 등)으로 대체를 원하실 경우 결제하신 카드사나 PG사를 통해 직접 타 증빙을 발급받아 회신해 주셔야 처리가 가능합니다.',
+      generated:false, checklist:['대체 증빙(카드매출전표 등)','사업자등록증'], plannerAction:'재무팀 전달 — 내용 공유 및 「세금계산서 발행 취소 요청서」 상신'
+    };
+  }
+  // closed (강성 대응)
+  return {
+    caseLabel:caseTitle, situationLabel:'상황 C · 회계 마감 후 요청 (강성 대응)', timingLabel, escalate:true,
+    csGuide:c1note+'1차: 마감되어 원칙상 결제 취소 없이 발행 취소 불가 안내. 강성 유저: 결제 취소 선행 후 사용금액에 대해 타 증빙 발행·회신 시 취소 가능. 타증빙은 카드사/PG사 직접 문의. 유저가 타 증빙+사업자등록증 회신 시 기획자에 이관.',
+    csScript:'고객님, 현재 회계 마감이 완료되어 원칙상 결제 취소 없이 세금계산서 발행 취소는 불가능합니다. 세금계산서를 완전히 취소하시려면 결제 취소를 먼저 진행하신 후, 사용하신 금액에 대해 타 증빙(카드매출전표 등)을 발급받아 회신해 주셔야 취소가 가능합니다. 타 증빙 발행 방법은 결제하신 카드사 또는 PG사로 직접 문의 부탁드립니다. 결제 취소 후 별도 요청이 없으실 경우, 결제 취소일(세법상 계약 해제일) 기준 익월 초에 사용분만큼 수정 발행될 예정입니다.',
+    generated:true, checklist:['대체 증빙(카드매출전표 등)','사업자등록증'],
+    plannerAction:'(유저가 타 증빙+사업자등록증 회신 후) 재무팀 전달 — 내용 공유 및 「세금계산서 발행 취소 요청서」 상신'
+  };
+}
+
+/* =========================================================
+   위저드 렌더
+========================================================= */
+function optHTML(sel, val, key, title, sub, rec){
+  return `<div class="opt ${sel?'sel':''} ${rec&&!sel?'recommended':''}" onclick="pick('${key}','${val}')">
+    <div class="radiodot"></div><div style="flex:1"><b>${title}</b>${sub?`<small>${sub}</small>`:''}</div>${rec?'<span class="recbadge">추천</span>':''}</div>`;
+}
+function pick(key,val){ state[key]=val;
+  // 하위 선택 초기화
+  if(key==='case1'){ state.case1still=null; if(val==='no'){} }
+  if(key==='elapsed'||key==='timing'){ state.intent=null; }
+  renderWizard();
+}
+function setDate(which,val){ state[which]=val;
+  const auto=computeTiming(state.paymentDate,state.requestDate);
+  if(auto){ state.timingAuto=auto; } // 미리보기만 갱신, 자동 페이지 이동 없음
+  renderWizard();
+}
+
+const proceeding = () => state.case1==='no' || (state.case1==='yes'&&state.case1still==='yes');
+const terminated = () => state.case1==='yes' && state.case1still==='no';
+
+function renderSteps(){
+  const cur=state.page;
+  const steps=[['①','결제 정보'],['②','문의 유형'],['③','상태 확인'],['④','결과']];
+  document.getElementById('flowmap').innerHTML =
+    steps.map((s,i)=>`<span class="${cur===i+1?'on':''}">${s[0]} ${s[1]}</span>`).join('<span style="background:none">›</span>');
+}
+
+function syncElapsed(){ const er=recommendElapsed(); if(er) state.elapsed=er.rec; } // 환불 조건은 날짜로 자동 확정
+function conditionsComplete(){ if(!state.timing) return false; if(state.timing==='confirmed' && state.intent==null) return false; return true; }
+
+function goToPage(p){ state.page=p; renderWizard(); window.scrollTo({top:0,behavior:'smooth'}); }
+function nextFromDates(){
+  if(!state.paymentDate || !state.serviceStart){ toast('결제일과 서비스 시작일을 모두 입력해 주세요'); return; }
+  const auto=computeTiming(state.paymentDate,state.requestDate);
+  if(auto){ state.timingAuto=auto; }
+  syncElapsed();
+  goToPage(2);
+}
+function inquiryNext(){
+  if(state.case1==null){ toast('문의 유형을 선택해 주세요'); return; }
+  if(state.case1==='yes' && state.case1still==null){ toast('1차 안내 후 취소 희망 여부를 선택해 주세요'); return; }
+  if(terminated()){ goToPage(4); return; } // 카드 증빙중복 1차 안내로 종결
+  syncElapsed();
+  goToPage(3);
+}
+function goResult(){ if(!conditionsComplete()){ toast('세금계산서 상태를 선택해 주세요'); return; } goToPage(4); }
+function resetDates(){ state.paymentDate=''; state.serviceStart=''; state.requestDate=todayStr();
+  state.timingAuto=null; state.elapsed=null; state.timing=null; state.intent=null; renderWizard(); toast('날짜를 초기화했습니다'); }
+function sameAsPayment(){ if(!state.paymentDate){ toast('결제일을 먼저 입력해 주세요'); return; }
+  setDate('serviceStart', state.paymentDate); }
+
+function renderWizard(){
+  const w=document.getElementById('wizard');
+  let h='';
+
+  /* ---------- 페이지 1: 결제 정보 ---------- */
+  if(state.page===1){
+    const auto=state.paymentDate?computeTiming(state.paymentDate,state.requestDate):null;
+    const er=state.serviceStart?recommendElapsed():null;
+    const refundLine = er ? `<b>${er.rec==='within7'?'전액환불':'부분환불'}</b> — ${er.reason}`
+      : `<span style="color:var(--sub)">서비스 시작일 입력 시 자동 판정</span>`;
+    const timingLine = auto ? `<b>${TIMING_LABEL[auto.timing]}</b> (요청일 ${auto.req} 기준)`
+      : `<span style="color:var(--sub)">결제일 입력 시 자동 판정</span>`;
+    const preview=`<div class="autoinfo" style="margin-top:16px">📌 입력값 기준 자동 판정 <span style="color:var(--sub);font-weight:400">— 날짜를 입력하면 자동 기입됩니다 (다음 단계에서 수정 가능)</span><br>
+      · 환불 조건: ${refundLine}<br>
+      · 세금계산서 상태: ${timingLine}</div>`;
+    const prepayNote = (er&&er.prepay)
+      ? `<div class="warnnote" style="margin-top:10px">서비스 시작일 이전에 미리 결제한 <b>기간연장 선결제분</b>으로 전액환불 대상입니다. (기간연장 결제는 기존 서비스 만료일 30일 전부터 가능)</div>` : '';
+    h+=`<div class="card">
+      <div class="q"><span class="stepnum">1</span>고객 결제 정보를 입력해 주세요.</div>
+      <div class="hint">환불 조건은 <b>서비스 시작일</b>, 세금계산서 상태는 <b>결제일</b> 기준으로 계산됩니다. 두 날짜를 모두 입력한 뒤 [다음]을 눌러 주세요.</div>
+      <div class="daterow">
+        <div class="field"><label>결제일 *</label><input type="date" value="${state.paymentDate}" onchange="setDate('paymentDate',this.value)"></div>
+        <div class="field"><label>서비스 시작일 * <button class="minibtn" onclick="sameAsPayment()">결제일과 동일</button></label><input type="date" value="${state.serviceStart}" onchange="setDate('serviceStart',this.value)"></div>
+        <div class="field"><label>요청(문의) 접수일</label><input type="date" value="${state.requestDate}" onchange="setDate('requestDate',this.value)"></div>
+      </div>
+      ${preview}
+      ${prepayNote}
+      <div class="btnrow"><button class="act primary" onclick="nextFromDates()">다음 →</button><button class="act ghost" onclick="resetDates()">날짜 초기화</button></div>
+    </div>`;
+  }
+
+  /* ---------- 페이지 2: 문의 유형 ---------- */
+  else if(state.page===2){
+    h+=`<div class="card">
+      <div class="q"><span class="stepnum">2</span>문의 유형을 확인해 주세요.</div>
+      <div class="autoinfo" style="margin-bottom:18px">결제일 <b>${state.paymentDate}</b> · 서비스 시작일 <b>${state.serviceStart}</b> · 요청일 <b>${state.requestDate}</b>
+        <button class="copybtn" style="float:right;margin-top:-2px" onclick="goToPage(1)">날짜 수정</button></div>
+      <div class="q" style="font-size:15px;margin-bottom:4px">카드 결제 증빙 중복 발행을 우려해 문의하셨나요?</div>
+      <div class="hint" style="margin-left:0">다음메일은 카드매출전표를 발행하지 않아 증빙이 중복되지 않습니다. 그 외 취소 요청이면 [아니오]를 선택하고 다음 단계에서 조건을 설정합니다.</div>
+      <div class="opts">
+        ${optHTML(state.case1==='yes','yes','case1','예','카드 증빙 중복 우려 문의')}
+        ${optHTML(state.case1==='no','no','case1','아니오','그 외 세금계산서 취소 요청')}
+      </div>`;
+    if(state.case1==='yes'){
+      h+=`<div class="sect"><div class="scriptwrap"><div class="shd" style="margin-bottom:6px">💬 1차 안내 스크립트 · 고객 발송용</div>
+        <div class="scriptbox customer"><span class="qbody">고객님, 세금계산서는 직접 신청하신 경우에 발행되며 매출신고이기 때문에 모든 거래유형에 지원하고 있습니다. 이에 카드결제 시에도 증빙이 중복 발행되지 않도록 카드매출전표는 발행하지 않고 있어 고객님은 발행된 세금계산서로 매출 증빙이 가능하시고, 카드매출전표는 발행되지 않으셨습니다.</span></div></div>
+        <div class="q" style="font-size:15px;margin-top:16px;margin-bottom:6px">1차 안내 후에도 세금계산서 발행 취소를 계속 희망하시나요?</div>
+        <div class="opts">
+          ${optHTML(state.case1still==='no','no','case1still','아니오','안내로 종결')}
+          ${optHTML(state.case1still==='yes','yes','case1still','예','계속 취소 희망 · 조건 확인 진행')}
+        </div></div>`;
+    }
+    const fwdLabel = terminated() ? '결과 보기 →' : '다음 →';
+    h+=`<div class="btnrow"><button class="act ghost" onclick="goToPage(1)">← 이전</button>
+      <button class="act primary" onclick="inquiryNext()">${fwdLabel}</button></div>
+    </div>`;
+  }
+
+  /* ---------- 페이지 3: 상태 확인 (조건 설정) ---------- */
+  else if(state.page===3){
+    const auto=state.timingAuto; const er=recommendElapsed();
+    h+=`<div class="card">
+      <div class="q"><span class="stepnum">3</span>상태를 확인해 주세요.</div>
+      <div class="autoinfo" style="margin-bottom:18px">결제일 <b>${state.paymentDate}</b> · 서비스 시작일 <b>${state.serviceStart}</b> · 요청일 <b>${state.requestDate}</b>
+        <button class="copybtn" style="float:right;margin-top:-2px" onclick="goToPage(1)">날짜 수정</button></div>`;
+    // 환불 조건: 날짜로 자동 확정 (재선택 없음)
+    if(er){
+      h+=`<div class="sect"><h3>환불 조건 <span class="hchip auto">자동</span> <span class="h3sub">(입력 날짜로 자동 확정)</span></h3>
+        <div class="determined">
+          <span class="det-badge ${er.rec==='within7'?'full':'partial'}">${er.rec==='within7'?'전액 환불':'부분 환불'}</span>
+          <span class="det-reason">${er.reason}</span>
+        </div></div>`;
+    }
+    // 세금계산서 상태: 직접 선택 (추천 표시)
+    const at=auto?auto.timing:null;
+    const atInfo = auto?`<div class="recinfo">
+        <div class="recinfo-head">🕒 오늘 날짜 기준 자동 계산 <span class="recinfo-date">기준일 ${auto.req}</span></div>
+        <div class="recinfo-row"><span class="recinfo-k">추천 상태</span><span class="recinfo-v">${TIMING_LABEL[auto.timing].split(' (')[0]} <span class="recbadge">추천</span></span></div>
+        <div class="recinfo-row"><span class="recinfo-k">회계 마감 예정</span><span class="recinfo-v">${auto.close}</span></div>
+        <div class="recinfo-note">발행 상태 구간은 <b>결제일</b> 기준이며, 지금 어느 구간인지(추천)와 회계 마감일은 <b>오늘 날짜로 자동 계산</b>된 값입니다. 5영업일 계산은 주말만 반영하므로, 공휴일이 낀 달은 실제 마감일을 확인해 아래에서 직접 선택하세요.</div>
+      </div>`:'';
+    h+=`<div class="sect"><h3>세금계산서 발행 상태를 선택하세요 <span class="hchip select">선택</span></h3>${atInfo}
+      <div class="opts">
+        ${optHTML(state.timing==='before','before','timing','발행 전','결제 당월 ~ 익월 1일 23:59', at==='before')}
+        ${optHTML(state.timing==='confirmed','confirmed','timing','발행 확정 · 회계 마감 전','익월 2일 ~ 5영업일 15시', at==='confirmed')}
+        ${optHTML(state.timing==='closed','closed','timing','회계 마감 후','익월 5영업일 15시 이후', at==='closed')}
+      </div></div>`;
+    if(state.timing==='confirmed'){
+      h+=`<div class="sect"><h3>취소 범위</h3>
+        <div class="opts">
+          ${optHTML(state.intent==='proofOnly','proofOnly','intent','증빙(세금계산서)만 취소','결제는 유지')}
+          ${optHTML(state.intent==='both','both','intent','결제 취소 + 증빙 취소','결제 취소 완료 포함')}
+        </div></div>`;
+    }
+    h+=`<div class="btnrow"><button class="act ghost" onclick="goToPage(2)">← 이전</button>
+      <button class="act primary" onclick="goResult()">결과 보기 →</button></div>
+    </div>`;
+  }
+
+  /* ---------- 페이지 4: 결과 ---------- */
+  else if(state.page===4){
+    h+=renderResult();
+    const editPage = terminated()?2:3;
+    h+=`<div class="btnrow"><button class="act ghost" onclick="goToPage(${editPage})">← 수정</button>
+      <button class="act ghost" onclick="resetAll()">↺ 새 케이스 시작</button></div>`;
+  }
+
+  w.innerHTML=h;
+  renderSteps();
+}
+
+let lastResult=null;
+function renderResult(){
+  const r=computeResult(state); lastResult=r;
+  const vClass=r.escalate?'v-esc':'v-ans';
+  const vTitle=r.escalate?'기획자 이관 필요':'CS 답변으로 종결 가능';
+  const vSub=r.escalate?'고객 안내 진행 후, 필요 서류·정보 확보 후 기획자에 이관하세요.':'추가 이관 없이 아래 스크립트로 안내하고 종결하세요.';
+  const vIcon=r.escalate?'⇪':'✓';
+  let h=`<div class="card result">
+    <div class="verdict ${vClass}">
+      <div class="v-icon">${vIcon}</div>
+      <div class="v-main">
+        <div class="v-title">${vTitle}</div>
+        <div class="v-sub">${vSub}</div>
+      </div>
+      <div class="v-tags">
+        <span class="badge b-case">${r.caseLabel}</span>
+        ${r.timingLabel?`<span class="badge b-time">${r.timingLabel.split(' (')[0]}</span>`:''}
+      </div>
+    </div>
+    <div style="font-size:14px;color:var(--sub);margin:-6px 0 14px">진단 상황: <b style="color:var(--ink)">${r.situationLabel}</b></div>`;
+
+  // 내부 대응 지침 (담당자용) — 불릿 지침 형식
+  const bullets=r.csGuide.split(/\.\s+/).map(t=>t.trim()).filter(Boolean).map(t=>t.replace(/\.$/,'')+'.');
+  h+=`<div class="sect"><div class="guidebox">
+      <div class="ghd">📋 내부 대응 지침 · 담당자용</div>
+      <ul>${bullets.map(b=>`<li>${b}</li>`).join('')}</ul>
+    </div></div>`;
+
+  // 고객 발송용 스크립트 (재사용 스니펫)
+  const scriptBox = `<div class="scriptwrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <div class="shd">💬 고객 발송용 스크립트${r.generated?' <span class="genflag" style="position:static;margin-left:6px">가이드 기반 생성본</span>':''}</div>
+      <button class="copybtn" onclick="copyText(decodeURIComponent('${encodeURIComponent(r.csScript)}'),'스크립트 복사됨')">스크립트 복사</button></div>
+    <div class="scriptbox customer"><span class="qbody">${r.csScript}</span></div></div>`;
+
+  const checklistHTML = r.checklist.length
+    ? `<div class="checklist">${r.checklist.map((c,i)=>`<label><input type="checkbox" id="chk${i}" onchange="renderEscalation()">${c}</label>`).join('')}</div>`
+    : `<div class="hint" style="margin-left:0">이 케이스는 추가로 확보할 서류가 없습니다. 안내 후 바로 이관하세요.</div>`;
+
+  if(r.escalate){
+    // 이관: 고객 안내 → 서류 확보 → 기획자 이관 순서
+    h+=`<div class="sect"><h3>기획자 이관 절차 · 순서대로 진행</h3>
+      <div class="proc">
+        <div class="pstep"><div class="pnum">1</div><div class="pbody">
+          <div class="plabel">고객 안내</div>
+          <div class="hint" style="margin:0 0 8px 0">먼저 고객에게 아래 스크립트로 안내하세요.</div>
+          ${scriptBox}
+        </div></div>
+        <div class="pstep"><div class="pnum">2</div><div class="pbody">
+          <div class="plabel">필요 서류·정보 확보</div>
+          <div class="hint" style="margin:0 0 8px 0">이관 전 아래 항목을 고객에게 회신받아 확보하세요.</div>
+          ${checklistHTML}
+        </div></div>
+        <div class="pstep"><div class="pnum">3</div><div class="pbody">
+          <div class="plabel">기획자 이관 요청</div>
+          <div class="hint" style="margin:0 0 8px 0">고객 안내·서류 확보 완료 후, 아래 조치로 기획자에 이관하세요.</div>
+          <div class="scriptbox" style="border-left-color:#e08600">${r.plannerAction}</div>
+          <div class="btnrow" style="margin-top:12px">
+            <button class="act primary" onclick="copyEscalation()">📋 이관 요약 복사</button>
+            <button class="act ghost" onclick="copyShareLink()">🔗 결과 공유 링크 복사</button>
+          </div>
+          <div class="hint" style="margin:8px 0 0 0">요약 복붙: 재무팀 상신용 요청서 포맷 포함 · 공유 링크: 기획자가 열면 동일 분석 화면 복원(재실행 불필요)</div>
+        </div></div>
+      </div></div>`;
+  } else {
+    // 답변 종결: 스크립트 안내 후 종결
+    h+=`<div class="sect">${scriptBox}
+      <div class="hint" style="margin:8px 0 0 0">위 스크립트로 고객에게 안내 후 종결하세요. 추가 이관·서류가 필요하지 않습니다.</div></div>`;
+  }
+
+  // 사용 확정 (통계)
+  const testMode = state.mode==='test';
+  h+=`<div class="usebar ${testMode?'testmode':''}" id="useBar">
+    <div style="font-weight:700;margin-bottom:4px">${testMode?'🧪 테스트 모드':'✅ 실제 응대 모드'}</div>
+    <div class="hint" id="useHint" style="margin:0 0 10px 0">${testMode?'테스트로 확정한 답변은 실제 통계에서 제외되며, 테스트 집계로만 기록됩니다.':'이 답변을 실제 고객에게 사용하셨다면 아래 버튼으로 확정해 주세요. 실제 사용 통계에 반영됩니다.'}</div>
+    <button class="act ${testMode?'ghost':'primary'}" id="useBtn" onclick="confirmUse()">${testMode?'테스트 사용 기록':'이 답변 사용 확정'}</button>
+    <button class="act ghost hide" id="undoBtn" onclick="undoConfirm()">↩ 확정 취소</button>
+  </div>`;
+
+  h+=`</div>`;
+  return h;
+}
+
+/* =========================================================
+   이관: 요약 복붙 + 공유 링크(URL 해시)
+========================================================= */
+function buildSummary(r){
+  const s=state; const a=s.timingAuto;
+  const L=[];
+  L.push('━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  L.push('[세금계산서 취소 · CS 케이스 이관 요약]');
+  L.push('━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  L.push('■ 분류: '+r.caseLabel);
+  L.push('■ 상황: '+r.situationLabel);
+  if(r.timingLabel) L.push('■ 세금계산서 상태: '+r.timingLabel);
+  L.push('');
+  L.push('■ 케이스 입력값');
+  L.push('  · 카드결제 증빙중복 문의(케이스1): '+(s.case1==='yes'?'예'+(s.case1still==='yes'?' → 1차답변 후에도 취소 희망':''):'아니오'));
+  L.push('  · 서비스 시작일: '+(s.serviceStart||'-')+' / 결제일: '+(s.paymentDate||'-')+' / 요청 접수일: '+(s.requestDate|| (a?a.req:'오늘')));
+  L.push('  · 환불 조건: '+(s.elapsed==='within7'?'7일 이내(전액환불, 기간연장 선결제 포함)':s.elapsed==='over7'?'8일 이상 경과(부분환불)':'-'));
+  if(s.intent) L.push('  · 취소 범위: '+(s.intent==='proofOnly'?'증빙만 취소':'결제취소+증빙취소'));
+  L.push('  · 세금계산서 발행 상태: '+(r.timingLabel||'-'));
+  if(a) L.push('  · 회계 마감일(결제일 기준): '+a.close);
+  L.push('');
+  L.push('■ CS 대응 가이드');
+  L.push('  '+r.csGuide);
+  L.push('');
+  L.push('■ 고객 안내 스크립트'+(r.generated?' (가이드 기반 생성본)':''));
+  L.push('  "'+r.csScript+'"');
+  if(r.checklist.length){
+    L.push('');
+    L.push('■ 확인 서류/정보');
+    r.checklist.forEach((c,i)=>{ const ck=document.getElementById('chk'+i); L.push('  ['+(ck&&ck.checked?'v':' ')+'] '+c); });
+  }
+  L.push('');
+  L.push('■ 기획자 요청 사항');
+  L.push('  '+r.plannerAction);
+  L.push('');
+  L.push('┌── 재무팀 상신용 「세금계산서 발행 취소 요청서」 ──');
+  L.push('│ 1. 고객/사업자 정보: (사업자등록증 확인) __________');
+  L.push('│ 2. 결제 정보: 결제일 '+(s.paymentDate||'____')+' / 금액 ____ / 수단 카드');
+  L.push('│ 3. 취소 사유: '+r.caseLabel+' · '+r.situationLabel);
+  L.push('│ 4. 처리 요청: '+(r.plannerAction));
+  L.push('│ 5. 세금계산서 상태: '+(r.timingLabel||'-'));
+  L.push('└───────────────────────────');
+  L.push('');
+  L.push('생성일시: '+new Date().toLocaleString('ko-KR'));
+  return L.join('\n');
+}
+function copyEscalation(){ copyText(buildSummary(lastResult),'이관 요약이 복사되었습니다'); }
+
+function copyShareLink(){
+  const payload=btoa(encodeURIComponent(JSON.stringify({
+    case1:state.case1,case1still:state.case1still,elapsed:state.elapsed,
+    paymentDate:state.paymentDate,serviceStart:state.serviceStart,requestDate:state.requestDate,timing:state.timing,intent:state.intent
+  })));
+  const url=location.origin+location.pathname+'#c='+payload;
+  copyText(url,'공유 링크가 복사되었습니다');
+}
+function loadFromHash(){
+  if(location.hash.startsWith('#c=')){
+    try{
+      const o=JSON.parse(decodeURIComponent(atob(location.hash.slice(3))));
+      Object.assign(state,o);
+      state.timingAuto=computeTiming(state.paymentDate,state.requestDate);
+      state.page=4;
+      showTab('diag'); renderWizard();
+      toast('공유된 케이스를 불러왔습니다');
+    }catch(e){ console.warn(e); }
+  }
+}
+
+/* =========================================================
+   통계 (localStorage, 실제/테스트 구분)
+========================================================= */
+const LS_KEY='taxinv_cs_logs_v1';
+function getLogs(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){return[]} }
+function saveLogs(l){ localStorage.setItem(LS_KEY,JSON.stringify(l)); }
+let currentLogs=[]; // 대시보드에 현재 표시 중인 (정규화된) 기록
+
+let lastConfirm=null; // { localTs, dbId, mode }
+function confirmUse(){
+  const r=lastResult; if(!r) return;
+  const localTs=Date.now();
+  // 항상 로컬에 백업
+  const logs=getLogs();
+  logs.push({ ts:localTs, mode:state.mode, caseLabel:r.caseLabel, situation:r.situationLabel,
+    escalate:r.escalate, generated:r.generated });
+  saveLogs(logs);
+  lastConfirm={ localTs, dbId:null, mode:state.mode };
+  // UI: 확정 상태 + 확정 취소 버튼
+  const bar=document.getElementById('useBar');
+  const hint=document.getElementById('useHint');
+  const btn=document.getElementById('useBtn');
+  const undo=document.getElementById('undoBtn');
+  bar.classList.add('confirmed');
+  btn.classList.add('hide'); undo.classList.remove('hide');
+  hint.textContent = (state.mode==='test'?'테스트로 기록되었습니다.':'실제 사용 통계에 반영되었습니다.')+' 잘못 누르셨다면 [확정 취소]로 되돌릴 수 있습니다.';
+  // 공용 DB 저장 (설정 시)
+  if(DB.enabled){
+    dbInsert({ mode:state.mode, case_label:r.caseLabel, situation:r.situationLabel, escalate:r.escalate, generated:r.generated })
+      .then(id=>{ if(lastConfirm) lastConfirm.dbId=id; toast(state.mode==='test'?'테스트 기록 저장됨 (공용 DB)':'실제 사용 기록 저장됨 (공용 DB)'); })
+      .catch(e=>{ console.warn(e); toast('공용 DB 저장 실패 — 이 기기 로컬에만 저장됨'); });
+  } else {
+    toast(state.mode==='test'?'테스트 사용으로 기록됨 (로컬)':'실제 사용 통계에 반영됨 (로컬)');
+  }
+}
+function undoConfirm(){
+  if(!lastConfirm){ return; }
+  // 로컬 기록 되돌리기
+  const logs=getLogs().filter(l=>l.ts!==lastConfirm.localTs);
+  saveLogs(logs);
+  // 공용 DB 기록 삭제 (있으면)
+  if(DB.enabled && lastConfirm.dbId!=null){
+    dbDelete(lastConfirm.dbId)
+      .then(()=>toast('확정을 취소했습니다 (공용 DB 기록 삭제됨)'))
+      .catch(e=>{ console.warn(e); toast('로컬은 취소됐지만 공용 DB 삭제 실패 — 삭제 정책 설정을 확인하세요'); });
+  } else if(DB.enabled && lastConfirm.dbId==null){
+    toast('확정을 취소했습니다 (공용 DB 저장 전이었습니다)');
+  } else {
+    toast('확정을 취소했습니다');
+  }
+  // UI 원복
+  const bar=document.getElementById('useBar');
+  const hint=document.getElementById('useHint');
+  const btn=document.getElementById('useBtn');
+  const undo=document.getElementById('undoBtn');
+  bar.classList.remove('confirmed');
+  undo.classList.add('hide'); btn.classList.remove('hide');
+  hint.textContent = (state.mode==='test'?'테스트로 확정한 답변은 실제 통계에서 제외됩니다.':'이 답변을 실제 고객에게 사용하셨다면 아래 버튼으로 확정해 주세요.');
+  lastConfirm=null;
+}
+
+async function renderStats(){
+  const srcEl=document.getElementById('statSource');
+  let logs, srcHtml;
+  if(DB.enabled){
+    if(srcEl) srcEl.innerHTML='<span class="src-chip loading">공용 DB에서 불러오는 중…</span>';
+    try{ logs=(await dbFetch()).map(normalizeLog);
+      srcHtml='<span class="src-chip ok">● 공용 DB 연결됨 · 팀 전체 집계</span>'; }
+    catch(e){ console.warn(e); logs=getLogs().map(normalizeLog);
+      srcHtml='<span class="src-chip warn">공용 DB 연결 실패 — 이 기기 로컬 기록만 표시</span>'; }
+  } else {
+    logs=getLogs().map(normalizeLog);
+    srcHtml='<span class="src-chip local">이 기기에만 저장 (로컬) · 팀 취합 안 됨</span>';
+  }
+  currentLogs=logs;
+  if(srcEl) srcEl.innerHTML=srcHtml;
+
+  const real=logs.filter(l=>l.mode==='real'), test=logs.filter(l=>l.mode==='test');
+  const realEsc=real.filter(l=>l.escalate).length;
+  document.getElementById('statCards').innerHTML=`
+    <div class="stat"><div class="n">${real.length}</div><div class="l">실제 응대 총건</div></div>
+    <div class="stat"><div class="n">${realEsc}</div><div class="l">실제 이관 건</div></div>
+    <div class="stat"><div class="n">${real.length-realEsc}</div><div class="l">실제 CS 답변 종결</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">${test.length}</div><div class="l">테스트 (통계 제외)</div></div>`;
+  const byCase={};
+  real.forEach(l=>{ const k=l.caseLabel+' · '+l.situation; byCase[k]=(byCase[k]||0)+1; });
+  const rows=Object.entries(byCase).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('caseTable').innerHTML=
+    '<tr><th>분류 · 상황</th><th>실제 사용</th></tr>'+
+    (rows.length?rows.map(([k,v])=>`<tr><td>${k}</td><td><b>${v}</b>회</td></tr>`).join('')
+      :'<tr><td colspan="2" style="color:var(--sub)">실제 사용 확정 기록이 없습니다.</td></tr>');
+  const recent=[...logs].sort((a,b)=>b.ts-a.ts).slice(0,30);
+  document.getElementById('logTable').innerHTML=
+    '<tr><th>일시</th><th>구분</th><th>분류</th><th>처리</th></tr>'+
+    (recent.length?recent.map(l=>`<tr>
+      <td class="mini">${new Date(l.ts).toLocaleString('ko-KR')}</td>
+      <td><span class="pill ${l.mode==='real'?'r':'t'}">${l.mode==='real'?'실제':'테스트'}</span></td>
+      <td>${l.caseLabel} <span class="mini">${l.situation}</span></td>
+      <td>${l.escalate?'이관':'답변'}</td></tr>`).join('')
+      :'<tr><td colspan="4" style="color:var(--sub)">기록이 없습니다.</td></tr>');
+}
+function exportCSV(){
+  const logs=currentLogs.length?currentLogs:getLogs().map(normalizeLog);
+  if(!logs.length){ toast('내보낼 기록이 없습니다'); return; }
+  const head='일시,구분,분류,상황,처리,스크립트유형\n';
+  const body=logs.map(l=>[new Date(l.ts).toLocaleString('ko-KR'),l.mode==='real'?'실제':'테스트',
+    '"'+l.caseLabel+'"','"'+l.situation+'"',l.escalate?'이관':'답변',l.generated?'생성본':'가이드'].join(',')).join('\n');
+  const blob=new Blob(['﻿'+head+body],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='CS_통계_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+function clearStats(){
+  if(DB.enabled){ toast('공용 DB 기록은 여기서 삭제할 수 없습니다 (관리자만 가능). 이 기기 로컬 백업만 초기화합니다.'); }
+  if(confirm(DB.enabled?'이 기기 로컬 백업 기록을 초기화할까요? (공용 DB는 유지됨)':'모든 통계 기록을 삭제할까요? (되돌릴 수 없음)')){
+    localStorage.removeItem(LS_KEY); renderStats(); toast('로컬 기록을 초기화했습니다');
+  }
+}
+
+/* =========================================================
+   공통 UI
+========================================================= */
+function applyModeUI(){
+  const test = state.mode==='test';
+  document.getElementById('modeSwitch').classList.toggle('test-on', test);
+  document.body.classList.toggle('testmode', test);
+  const tf=document.getElementById('testFlag'); if(tf) tf.classList.toggle('hide', !test);
+}
+function toggleMode(){
+  state.mode = state.mode==='real'?'test':'real';
+  applyModeUI();
+  if(document.getElementById('view-diag').classList.contains('hide')===false) renderWizard();
+}
+function showTab(t){
+  ['diag','stats','guide'].forEach(x=>{
+    document.getElementById('view-'+x).classList.toggle('hide',x!==t);
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+  });
+  if(t==='stats') renderStats();
+}
+function resetAll(){ const m=state.mode; resetState(); state.mode=m; location.hash=''; renderWizard(); window.scrollTo({top:0,behavior:'smooth'}); }
+function renderEscalation(){ /* 체크박스 변경 시 요약에 반영됨 - 별도 렌더 불필요 */ }
+function copyText(txt,msg){
+  navigator.clipboard.writeText(txt).then(()=>toast(msg||'복사됨')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast(msg||'복사됨')}catch(e){toast('복사 실패')}ta.remove();
+  });
+}
+let toastT;
+function toast(m){ const el=document.getElementById('toast'); el.textContent=m; el.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200); }
+
+/* 가이드 원문 */
+document.getElementById('guideBody').innerHTML=`
+  <h2 style="margin-top:0">세금계산서 취소/정산 CS 가이드</h2>
+  <h3>1. 가이드 정의</h3>
+  <h4>프리미엄메일 취소/환불 조건 (서비스 시작일 기준)</h4>
+  <ul class="clean"><li><b>7일 이내:</b> 전액 환불</li><li><b>8일째 이상 경과:</b> 일할 계산하여 부분 환불</li></ul>
+  <div class="box"><b>기간연장 결제 포함 안내</b><br>기간연장 결제는 기존 서비스 만료일 30일 전부터 진행 가능. <b>서비스 시작일 이전에 미리 결제한 기간연장분도 전액환불 대상</b>이며, 서비스 시작일부터 7일 이내는 무료(전액)환불, 8일째부터 부분환불 조건입니다.</div>
+  <h4>세금계산서 상태 및 회계 마감 일정 (결제일 기준)</h4>
+  <div class="box"><b>발행 전</b> (결제 당월 1일 ~ 익월 1일 23:59)<br>시스템 데이터 전송 전이므로 세금계산서 신청의 자동 취소(발행 중단)가 가능한 기간</div>
+  <div class="box"><b>발행 확정 및 회계 마감 전</b> (익월 2일 ~ 익월 5영업일 15시)<br>매월 2일 재무팀 ERP(SAP)로 데이터 전송 완료되어 원본 세금계산서 발행 확정. 이 기간 취소 건은 무조건 원본이 발행되며 이후 (-) 세금계산서로 상계 처리</div>
+  <div class="box"><b>회계 마감 후</b> (익월 5영업일 15시 이후 ~ 익월 6영업일 경과)<br>회계 마감 완료</div>
+  <h3>2. 확인 순서</h3>
+  <ul class="clean"><li><b>케이스 1 파악:</b> 카드 결제건인데 세금계산서 발급되어 증빙 중복 발행으로 취소 요청한 건인지 가장 먼저 확인</li>
+  <li><b>케이스 2·3 파악:</b> 카드결제 여부와 무관하게 발행 취소를 원하면 <b>서비스 시작일 기준</b> 경과일(7일 이내 전액 / 8일째 이상 부분)을 확인하여 환불 금액 여부 파악 (기간연장 선결제분은 전액환불)</li></ul>
+  <h3>3. 케이스별 대응 가이드</h3>
+  <h4>케이스 1. 카드 결제 건이라 세금계산서 발급 취소 요청</h4>
+  <p>다음메일은 카드매출전표를 발행하지 않음에도 증빙 중복발행을 우려한 문의가 매우 많음. 1차 답변 후에도 취소 희망 시 케이스에 따라 기획자에 이관.</p>
+  <div class="box">"고객님, 세금계산서는 직접 신청하신 경우에 발행되며 매출신고이기 때문에 모든 거래유형에 지원하고 있습니다. 이에 카드결제 시에도 증빙이 중복 발행되지 않도록 카드매출전표는 발행하지 않고 있어 고객님은 발행된 세금계산서로 매출 증빙이 가능하시고, 카드매출전표는 발행되지 않으셨습니다."</div>
+  <h4>케이스 2. 결제 후 7일 이내 (전액 환불 기간)</h4>
+  <p><b>[상황 A] 발행 전:</b> 결제 취소 시 전액 환불 & 세금계산서 자동 취소 안내<br>
+  <b>[상황 B] 발행확정·마감 전</b> — ① 증빙만 취소: 결제취소 없이 증빙만 취소 가능(결제정보·사업자등록증 확인→기획자 이관→재무팀 상신) / ② 결제취소+증빙취소: 결제 취소일 기준 익월 초 (-) 발행 예정 안내(기획자 별도조치 없음)<br>
+  <b>[상황 C] 마감 후:</b> 회계 마감되어 결제 취소해야 증빙 취소 진행, 이미 취소 포함 결제 취소일 기준 익월 초 (-) 발행</p>
+  <h4>케이스 3. 결제 후 7일 경과 (부분 환불 기간)</h4>
+  <p><b>[상황 A] 발행 전:</b> 결제취소 없이 증빙만 취소 가능(결제정보·사업자등록증 확인→기획자 이관). 기획자: 반드시 결제 당월까지 DB 취소 & CS tool 건별과세 반영 개발자 요청 / 재무팀 슬랙 공유<br>
+  <b>[상황 B] 발행확정·마감 전</b> — ① 증빙만 취소: 마감 전이므로 결제취소 없이 발행취소 가능(확인→이관→재무팀 상신) / ② 결제취소+증빙취소: 대체 증빙 발행 회신 시 취소 가능. 미요청 시 결제취소일 기준 익월 초 사용분만큼 수정 발행. 카드사/PG사에서 타 증빙 발급 안내<br>
+  <b>[상황 C] 마감 후:</b> 원칙상 결제취소 없이 취소 불가. 강성 유저 — 결제취소 선행 후 사용금액 타 증빙 발행·회신 시 취소 가능. 타증빙+사업자등록증 회신 시 기획자 이관→재무팀 상신</p>
+`;
+
+/* init */
+applyModeUI();
+renderWizard();
+loadFromHash();
+</script>
+</body>
+</html>
