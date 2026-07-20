@@ -95,14 +95,31 @@
   .scriptbox.customer .qbody{padding-left:20px;display:block}
   /* 읽기 전용 정보 표시 (자동 확정) - 중립 회색, 선택 UI와 구분 */
   .determined{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f4f6fb;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-  .det-badge{font-size:14.5px;font-weight:800;color:#3b4557;background:#fff;border:1.5px solid #c3ccdd;border-radius:20px;padding:5px 14px}
-  .det-badge.full{color:#1f5bc4;border-color:#9dc0ff}
-  .det-badge.partial{color:#b06a00;border-color:#f0c48a;background:#fff9f0}
+  .det-badge{font-size:12px;font-weight:700;color:#3b4557;background:#fff;border:1px solid #c3ccdd;border-radius:14px;padding:2px 9px}
+  .det-badge.full{color:#1f5bc4;border-color:#c3d8ff}
+  .det-badge.partial{color:#b06a00;border-color:#f0d9b0;background:#fff9f0}
   .det-reason{font-size:13.5px;color:var(--sub);flex:1;min-width:140px}
+  /* 경량 표시: 환불 조건 한 줄 스트립 / 세금계산서 추천 한 줄 */
+  .fixline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f4f6fb;border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:13.5px}
+  .fixline .fixlabel{font-weight:700;color:var(--ink)}
+  .fixline .fixmeta{color:var(--sub)}
+  .fixline .fixmeta b{color:#b06a00;font-size:14.5px}
+  .reclite{background:#f0f5ff;border:1px solid #d6e2ff;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#274b9e;margin-bottom:10px}
+  .reclite b{color:#1f3f8f}
+  .reclite .muted{color:#7d93c7;font-weight:400}
+  .pickhint{font-size:12.5px;color:var(--sub);margin:2px 0 14px}
+  .pickhint b{color:var(--ink)}
+  .det-amt{flex-basis:100%;margin-top:10px;padding-top:10px;border-top:1px dashed #d9dee8;font-size:14.5px;color:#7a4d08}
+  .det-amt b{font-size:17px;color:#b06a00}
+  .det-amt .rf-sub{font-size:12.5px;color:#a2792f}
+  .refund-box{margin-top:10px;background:#fff9f0;border:1px solid #f0d9b0;border-radius:10px;padding:12px 15px;font-size:14.5px;color:#7a4d08}
+  .refund-box b{font-size:17px;color:#b06a00}
+  .refund-box .rf-sub{font-size:12.5px;color:#a2792f;font-weight:400}
   /* 섹션 헤더 구분 칩: 자동(회색) vs 선택(파랑) */
   .hchip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;letter-spacing:0;text-transform:none}
   .hchip.auto{background:#eceff5;color:#6b7890}
-  .hchip.select{background:#e3f0ff;color:#1f5bc4}
+  .hchip.fix{background:#e7ebf2;color:#4a5568;border:1px solid #cfd6e2}
+  .hchip.select{background:#2f6bff;color:#fff}
   .h3sub{font-weight:400;text-transform:none;letter-spacing:0;color:var(--sub)}
   /* 세금계산서 상태 추천 카드 (오늘 날짜 기준 자동 계산) */
   .recinfo{background:#f0f5ff;border:1px solid #d6e2ff;border-radius:12px;padding:14px 16px;margin-bottom:12px}
@@ -112,8 +129,9 @@
   .recinfo-k{color:var(--sub);min-width:100px;font-weight:600}
   .recinfo-v{color:var(--ink);font-weight:700}
   .recinfo-note{font-size:12.5px;color:#5b6b86;margin-top:10px;line-height:1.55;border-top:1px dashed #cdddff;padding-top:9px}
-  .minibtn{font-size:11.5px;font-weight:700;color:var(--brand);background:#eef3ff;border:1px solid #d6e2ff;border-radius:16px;padding:2px 10px;cursor:pointer;margin-left:8px}
-  .minibtn:hover{background:#dfe9ff}
+  .minibtn{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff;background:var(--brand);border:1px solid var(--brand-d);border-radius:8px;padding:4px 11px;cursor:pointer;margin-left:8px;box-shadow:0 1px 2px rgba(31,79,214,.28)}
+  .minibtn:hover{background:var(--brand-d)}
+  .minibtn:active{transform:translateY(1px);box-shadow:none}
   .recbadge{display:inline-block;font-size:11px;font-weight:800;background:#16a06a;color:#fff;padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle}
   .opt .recbadge{margin-left:auto;align-self:center}
   .opt.recommended{border-color:#16a06a;background:#eefaf3}
@@ -135,16 +153,54 @@
   .stat{background:#f7f9fd;border:1px solid var(--line);border-radius:12px;padding:16px}
   .stat .n{font-size:28px;font-weight:800;color:var(--brand)}
   .stat .l{font-size:13px;color:var(--sub);margin-top:3px}
+  .stat.esc .n{color:#e08600}.stat.ans .n{color:#16a06a}.stat.test .n{color:#8a94a6}
+  /* 총건 = 이관 + 종결 관계를 보여주는 요약 카드 */
+  .total-card{background:linear-gradient(135deg,#eef3ff,#f7f9fd);border:1px solid #d6e2ff;border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  .total-card .tl{font-size:13px;color:var(--sub);font-weight:700}
+  .total-n{font-size:34px;font-weight:800;color:var(--brand);line-height:1.1;margin:2px 0 8px}
+  .total-eq{font-size:14.5px;color:var(--ink)}
+  .split-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-top:12px;background:#eceff5}
+  .split-bar span{display:block;height:100%}
+  .sb-esc{background:#e08600}.sb-ans{background:#16a06a}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
   th{color:var(--sub);font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
+  #refundTable th{position:sticky;top:0;background:#fff;z-index:1;box-shadow:0 1px 0 var(--line)}
+  #refundTable td{padding:8px 12px}
   td .mini{font-size:12px;color:var(--sub)}
   .pill{font-size:11.5px;padding:2px 8px;border-radius:20px;font-weight:700}
   .pill.r{background:var(--answer);color:#0f8055}.pill.t{background:#fff2d6;color:#a86800}
-  .guide h3{color:var(--brand);border-bottom:2px solid var(--chip);padding-bottom:6px;margin-top:26px}
-  .guide h4{margin:16px 0 4px;font-size:15px}
+  /* 사용방법 탭 */
+  .help h3{font-size:16px;color:var(--brand);margin:24px 0 10px;border-bottom:2px solid var(--chip);padding-bottom:6px}
+  .help p,.help li{font-size:14px}
+  .help ul{padding-left:20px;margin:6px 0}.help li{margin:5px 0}
+  .help .hstep{display:flex;gap:14px;padding:12px 0;border-bottom:1px dashed var(--line)}
+  .help .hnum{width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:14px}
+  .help .hbody{flex:1;font-size:14px}
+  .help .hbody .ht{display:block;font-weight:800;margin-bottom:3px;color:var(--ink)}
+  .help .hbody b{color:var(--ink)}
+  .help .tip{background:#f0f5ff;border:1px solid #d6e2ff;border-radius:10px;padding:12px 15px;font-size:13.5px;color:#274b9e;margin:16px 0 0}
+  .guide h2{font-size:20px;margin:0 0 6px}
+  /* 섹션(1·2·3) = 파란 밑줄 */
+  .guide h3{color:var(--brand);border-bottom:2px solid var(--chip);padding-bottom:6px;margin-top:30px;scroll-margin-top:92px}
+  /* 일반 소제목(프리미엄메일 조건 등) = 회색 밑줄 */
+  .guide h4{margin:16px 0 6px;font-size:15px;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:5px}
+  /* 케이스 = 보라 채움 바 */
+  .guide h4.case{margin:28px 0 12px;font-size:16px;padding:11px 15px;background:linear-gradient(135deg,#6a4bbf,#8a6fd0);color:#fff;border:none;border-radius:9px;font-weight:800;box-shadow:0 2px 6px rgba(106,75,191,.22);scroll-margin-top:92px}
   .guide p,.guide li{font-size:14px}
-  .guide .box{background:#f7f9fd;border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:8px 0}
+  .guide ol.clean,.guide ul.clean{margin:6px 0;padding-left:22px}
+  .guide ol.clean li,.guide ul.clean li{margin:5px 0}
+  /* 상황(A·B·C) = 주황 강조 */
+  .guide .sit{margin:18px 0 8px;font-weight:800;color:#a2620a;background:#fff8ec;border:1px solid #f0d9b0;border-left:4px solid #e08600;border-radius:0 8px 8px 0;padding:8px 13px}
+  .guide .lbl{font-weight:700;color:#3b4557}
+  .guide .toc{background:#f7f9fd;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:6px 0 4px}
+  .guide .toc-title{font-weight:800;margin-bottom:8px;color:var(--ink);font-size:15px}
+  .guide .toc ol{margin:4px 0;padding-left:20px}.guide .toc ul{margin:4px 0;padding-left:18px}
+  .guide .toc a{color:var(--brand);cursor:pointer;text-decoration:none;border-bottom:1px dashed transparent}
+  .guide .toc a:hover{border-bottom-color:var(--brand)}
+  .guide .toc .casen{color:#6a4bbf;font-weight:600}
+  .guide .box{background:#f7f9fd;border:1px solid var(--line);border-left:4px solid #9fb8e8;border-radius:8px;padding:12px 15px;margin:8px 0;font-style:italic;color:#2a3346;font-size:14px}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2233;color:#fff;padding:11px 20px;border-radius:30px;font-size:14px;opacity:0;transition:.25s;z-index:50;pointer-events:none}
   .toast.show{opacity:1}
   .hide{display:none!important}
@@ -174,6 +230,8 @@
   <button id="tab-diag" class="active" onclick="showTab('diag')">진단 · 응대</button>
   <button id="tab-stats" onclick="showTab('stats')">통계 대시보드</button>
   <button id="tab-guide" onclick="showTab('guide')">가이드 원문</button>
+  <button id="tab-refund" onclick="showTab('refund')">환불 금액표</button>
+  <button id="tab-help" onclick="showTab('help')">사용방법</button>
 </nav>
 <main>
   <!-- ============ 진단 탭 ============ -->
@@ -186,7 +244,7 @@
   <section id="view-stats" class="hide">
     <div class="card">
       <div id="statSource" style="margin-bottom:14px"></div>
-      <div class="stat-grid" id="statCards"></div>
+      <div id="statCards"></div>
       <div class="btnrow">
         <button class="act ghost" onclick="exportCSV()">CSV 내보내기</button>
         <button class="act ghost" onclick="clearStats()">기록 초기화</button>
@@ -205,6 +263,74 @@
   <!-- ============ 가이드 탭 ============ -->
   <section id="view-guide" class="hide">
     <div class="card guide" id="guideBody"></div>
+  </section>
+
+  <!-- ============ 환불 금액표 탭 ============ -->
+  <section id="view-refund" class="hide">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:20px">서비스 사용일자별 최종 취소/환불 금액</h2>
+      <p style="color:var(--sub);margin:0 0 12px;font-size:13.5px">상품가 <b>34,900원</b> 기준 · 일할 금액 95.62원(34,900÷365) · 소수점 무조건 올림. <b>1~7일차는 전액 환불</b>, 8일차부터 일할 계산됩니다.</p>
+      <div id="refundQuick"></div>
+      <div style="max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px">
+        <table id="refundTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 사용방법 탭 ============ -->
+  <section id="view-help" class="hide">
+    <div class="card help">
+      <h2 style="margin:0 0 4px;font-size:20px">사용방법</h2>
+      <p style="color:var(--sub);margin:0 0 4px">세금계산서 취소 문의가 들어오면, 3단계로 진단해 <b>답변 스크립트</b>를 받거나 <b>기획자 이관</b> 여부를 판정하는 도구입니다.</p>
+
+      <h3>0. 시작 전 — 응대 모드 선택</h3>
+      <div class="hstep"><div class="hnum">!</div><div class="hbody">
+        <b class="ht">상단 오른쪽 [실제 응대 / 테스트] 스위치</b>
+        실제 고객 응대는 <b>실제 응대</b> 모드(파란 헤더), 연습·테스트는 <b>테스트</b> 모드(주황 헤더)로 두세요. 테스트로 확정한 기록은 실제 통계에서 제외됩니다.
+      </div></div>
+
+      <h3>1. 진단 · 응대 (3단계)</h3>
+      <div class="hstep"><div class="hnum">1</div><div class="hbody">
+        <b class="ht">결제 정보 입력</b>
+        결제일 · 서비스 시작일 · 요청(문의) 접수일을 입력하고 <b>[다음] 버튼을 누르세요.</b> 결제일과 서비스 시작일이 같으면 <b>[결제일과 동일] 버튼을 클릭</b>하면 자동 입력됩니다. 입력하면 환불 조건·세금계산서 상태가 자동 계산되어 미리 보입니다.
+      </div></div>
+      <div class="hstep"><div class="hnum">2</div><div class="hbody">
+        <b class="ht">문의 유형 선택 — 먼저 카드 증빙 중복 우려 문의인지 확인</b>
+        <b>가장 먼저</b> "카드 결제 증빙 중복 발행 우려" 문의인지 확인합니다. 맞으면 1차 안내 스크립트가 뜨고, 안내 후에도 취소를 원하는지에 따라 종결/상세 진행이 갈립니다.<br>
+        <b>이 문의가 아니라면 [아니오] 버튼을 누르고 [다음] 버튼을 누르세요.</b> 이 경우 답변은 <b>환불 여부(전액/부분)와 세금계산서 발행 상태</b>에 따라 달라지므로, 다음 단계에서 두 가지를 확인합니다.
+      </div></div>
+      <div class="hstep"><div class="hnum">3</div><div class="hbody">
+        <b class="ht">환불 여부 &amp; 세금계산서 발행 상태 선택</b>
+        <b>환불 여부(전액/부분)는 요청일 기준(서비스 시작일~요청일 경과)으로 자동 계산</b>되어 회색으로 표시됩니다(직접 고르지 않아도 됩니다). 부분환불이면 <b>환불 예정 금액</b>도 함께 표시됩니다. 여기에 더해 <b>세금계산서 발행 상태</b>를 직접 선택하고, 발행 전·마감 전이면 <b>결제 취소 여부</b>(결제 유지·증빙만 취소 / 결제 취소+증빙 취소, 이미 취소한 경우 포함)도 선택합니다. 오늘 날짜 기준 <b>추천</b> 항목이 표시되니 참고해 고른 뒤 <b>[결과 보기] 버튼을 누르세요.</b>
+      </div></div>
+
+      <h3>2. 결과 화면 활용</h3>
+      <ul>
+        <li><b>판정 배너</b> — 초록 "CS 답변으로 종결 가능" 또는 주황 "기획자 이관 필요"</li>
+        <li><b>내부 대응 지침</b>(담당자용)과 <b>고객 발송용 스크립트</b>가 구분되어 표시됩니다. 스크립트는 <b>[스크립트 복사] 버튼을 눌러</b> 바로 사용하세요. (가이드에 없던 답변은 '가이드 기반 생성본'으로 표시)</li>
+        <li><b>이관이 필요한 경우</b> — ① 고객 안내 → ② 필요 서류·정보 확보 → ③ 기획자 이관 순서로 진행. <b>[이관 요약 복사] 버튼</b>(재무팀 상신용 포맷 포함) 또는 <b>[결과 공유 링크 복사] 버튼</b>(기획자가 링크만 열면 동일 분석 화면 복원)을 눌러 전달하세요.</li>
+      </ul>
+
+      <h3>3. 응답 기록 (통계 반영)</h3>
+      <div class="hstep"><div class="hnum">✓</div><div class="hbody">
+        <b class="ht">[이 답변 사용 확정] 버튼</b>
+        실제 고객에게 사용했다면 결과 하단의 <b>[이 답변 사용 확정] 버튼을 눌러</b> 통계에 반영합니다. 잘못 눌렀으면 <b>[확정 취소] 버튼을 눌러</b> 되돌릴 수 있습니다.
+      </div></div>
+
+      <h3>4. 통계 대시보드</h3>
+      <ul>
+        <li><b>실제 응대 총건 = 이관 건 + CS 답변 종결 건</b> 으로 집계됩니다. (확정 버튼을 누른 실제 응대 건만 집계, 이관/종결은 진단 결과로 자동 분류)</li>
+        <li>공용 DB가 연결되어 있으면 여러 담당자의 기록이 실시간으로 합산됩니다. <b>[CSV 내보내기] 버튼을 눌러</b> 다운로드도 가능합니다.</li>
+      </ul>
+
+      <h3>5. 환불 금액표 · 가이드 원문</h3>
+      <ul>
+        <li><b>환불 금액표</b> 탭에서 서비스 사용일수별 최종 취소/환불 금액(34,900원 기준)을 확인할 수 있습니다. 진단에 날짜를 입력했다면 현재 케이스의 사용일차가 강조 표시됩니다.</li>
+        <li><b>가이드 원문</b> 탭에서 전체 정책 문서를 볼 수 있습니다. 맨 위 <b>목차</b> 항목을 클릭하면 해당 위치로 바로 이동합니다.</li>
+      </ul>
+
+      <div class="tip">💡 <b>Tip.</b> 문의가 카드 증빙중복이 아니어도, 날짜와 발행 상태에 따라 답변 방향이 달라집니다. 항상 결제일·서비스 시작일을 먼저 입력한 뒤 진단하세요.</div>
+    </div>
   </section>
 </main>
 <div class="toast" id="toast"></div>
@@ -311,6 +437,23 @@ function recommendElapsed(){
 }
 
 /* =========================================================
+   부분환불 일할 계산 (상품가 34,900원 · 365일 기준)
+   · 1~7일차: 전액 34,900원  · 8일차~: ceil(잔여일수 × 일할)  · 365일차: 0원
+========================================================= */
+const REFUND_PRICE=34900, REFUND_TOTAL=365;
+function refundByDays(days){ if(days<=7) return REFUND_PRICE; if(days>=REFUND_TOTAL) return 0;
+  return Math.ceil((REFUND_TOTAL-days)*(REFUND_PRICE/REFUND_TOTAL)); }
+function refundInfo(){
+  if(!state.serviceStart) return null;
+  const start=new Date(state.serviceStart+'T00:00:00');
+  const req=new Date((state.requestDate||todayStr())+'T00:00:00');
+  let days=Math.floor((req-start)/86400000)+1; // 서비스 시작일 = 1일차
+  if(days<1) days=1; if(days>REFUND_TOTAL) days=REFUND_TOTAL;
+  return { days, remain:REFUND_TOTAL-days, amount:refundByDays(days) };
+}
+function won(n){ return '₩'+Number(n).toLocaleString('ko-KR'); }
+
+/* =========================================================
    결과 매핑 (가이드 기반)
    generated:true = 가이드에 스크립트 미기재 → 생성본
 ========================================================= */
@@ -338,14 +481,25 @@ function computeResult(s){
   const timingLabel = TIMING_LABEL[t];
   const CHK = ['결제 정보(결제일·결제수단·금액)','사업자등록증'];
 
+  // ---- 발행 전 (전액/부분 공통): 결제 취소 여부로 분기 ----
+  if(t==='before'){
+    if(s.intent==='both') return {
+      caseLabel:caseTitle, situationLabel:'상황 A · 발행 전 / 결제 취소(이미 취소 포함)', timingLabel, escalate:false,
+      csGuide:c1note+'세금계산서가 발행 전이므로 결제 취소 시(이미 취소한 경우 포함) 발급 신청이 자동 취소됨. 환불 금액은 환불 조건에 따름. (CS 종결 가능)',
+      csScript:'고객님, 세금계산서가 아직 발행 전이므로 결제를 취소하시면(이미 취소하신 경우 포함) 세금계산서 발급 신청도 자동으로 함께 취소 처리됩니다. 별도의 증빙 취소 접수 없이 처리되오니 참고 부탁드립니다.',
+      generated:true, checklist:[], plannerAction:'별도 조치 없음'
+    };
+    return { // proofOnly (결제 유지, 증빙만 취소)
+      caseLabel:caseTitle, situationLabel:'상황 A · 발행 전 / 결제 유지, 증빙만 취소', timingLabel, escalate:true,
+      csGuide:c1note+'아직 발행 전이므로 결제 취소 없이 증빙만 취소 가능함을 안내. 결제정보·사업자등록증 확인 후 기획자에 이관.',
+      csScript:'고객님, 아직 세금계산서 발행 전이므로 결제 취소 없이 증빙만 취소 처리가 가능합니다. 처리를 위해 결제 정보와 사업자등록증을 확인 후 담당 부서를 통해 취소 접수를 도와드리겠습니다. (결제 당월 내 처리가 필요한 점 참고 부탁드립니다.)',
+      generated:true, checklist:CHK,
+      plannerAction:'(반드시 결제 당월까지) DB에서 세금계산서 요청 취소 및 CS tool 내 건별과세 반영되도록 개발자 요청 / 재무팀에 슬랙으로 내용 공유'
+    };
+  }
+
   // ---- 케이스 2 ----
   if(caseNo===2){
-    if(t==='before') return {
-      caseLabel:caseTitle, situationLabel:'상황 A · 발행 전 요청', timingLabel, escalate:false,
-      csGuide:c1note+'결제 취소 시 전액 환불되며 세금계산서 신청이 자동 취소됨을 안내. (CS 종결 가능)',
-      csScript:'고객님, 결제 취소를 진행하시면 세금계산서 발급 신청도 자동으로 함께 취소 처리됩니다.',
-      generated:false, checklist:[], plannerAction:'별도 조치 없음'
-    };
     if(t==='confirmed'){
       if(s.intent==='proofOnly') return {
         caseLabel:caseTitle, situationLabel:'상황 B-① · 발행확정·마감 전 / 증빙만 취소', timingLabel, escalate:true,
@@ -370,13 +524,6 @@ function computeResult(s){
   }
 
   // ---- 케이스 3 ----
-  if(t==='before') return {
-    caseLabel:caseTitle, situationLabel:'상황 A · 발행 전 요청', timingLabel, escalate:true,
-    csGuide:c1note+'아직 발행 전이므로 결제취소 없이 증빙만 취소 가능함을 안내. 결제정보·사업자등록증 확인 후 기획자에 이관.',
-    csScript:'고객님, 아직 세금계산서 발행 전이므로 결제 취소 없이 증빙만 취소 처리가 가능합니다. 처리를 위해 결제 정보와 사업자등록증을 확인 후 담당 부서를 통해 취소 접수를 도와드리겠습니다. (결제 당월 내 처리가 필요한 점 참고 부탁드립니다.)',
-    generated:true, checklist:CHK,
-    plannerAction:'(반드시 결제 당월까지) DB에서 세금계산서 요청 취소 및 CS tool 내 건별과세 반영되도록 개발자 요청 / 재무팀에 슬랙으로 내용 공유'
-  };
   if(t==='confirmed'){
     if(s.intent==='proofOnly') return {
       caseLabel:caseTitle, situationLabel:'상황 B-① · 발행확정·마감 전 / 증빙만 취소', timingLabel, escalate:true,
@@ -431,7 +578,7 @@ function renderSteps(){
 }
 
 function syncElapsed(){ const er=recommendElapsed(); if(er) state.elapsed=er.rec; } // 환불 조건은 날짜로 자동 확정
-function conditionsComplete(){ if(!state.timing) return false; if(state.timing==='confirmed' && state.intent==null) return false; return true; }
+function conditionsComplete(){ if(!state.timing) return false; if((state.timing==='before'||state.timing==='confirmed') && state.intent==null) return false; return true; }
 
 function goToPage(p){ state.page=p; renderWizard(); window.scrollTo({top:0,behavior:'smooth'}); }
 function nextFromDates(){
@@ -448,7 +595,11 @@ function inquiryNext(){
   syncElapsed();
   goToPage(3);
 }
-function goResult(){ if(!conditionsComplete()){ toast('세금계산서 상태를 선택해 주세요'); return; } goToPage(4); }
+function goResult(){
+  if(!state.timing){ toast('세금계산서 발행 상태를 선택해 주세요'); return; }
+  if((state.timing==='before'||state.timing==='confirmed') && state.intent==null){ toast('결제 취소 여부를 선택해 주세요'); return; }
+  goToPage(4);
+}
 function resetDates(){ state.paymentDate=''; state.serviceStart=''; state.requestDate=todayStr();
   state.timingAuto=null; state.elapsed=null; state.timing=null; state.intent=null; renderWizard(); toast('날짜를 초기화했습니다'); }
 function sameAsPayment(){ if(!state.paymentDate){ toast('결제일을 먼저 입력해 주세요'); return; }
@@ -517,35 +668,39 @@ function renderWizard(){
     const auto=state.timingAuto; const er=recommendElapsed();
     h+=`<div class="card">
       <div class="q"><span class="stepnum">3</span>상태를 확인해 주세요.</div>
-      <div class="autoinfo" style="margin-bottom:18px">결제일 <b>${state.paymentDate}</b> · 서비스 시작일 <b>${state.serviceStart}</b> · 요청일 <b>${state.requestDate}</b>
-        <button class="copybtn" style="float:right;margin-top:-2px" onclick="goToPage(1)">날짜 수정</button></div>`;
-    // 환불 조건: 날짜로 자동 확정 (재선택 없음)
+      <div class="autoinfo" style="margin-bottom:10px">결제일 <b>${state.paymentDate}</b> · 서비스 시작일 <b>${state.serviceStart}</b> · 요청일 <b>${state.requestDate}</b>
+        <button class="copybtn" style="float:right;margin-top:-2px" onclick="goToPage(1)">날짜 수정</button></div>
+      <div class="pickhint">🔒 회색은 <b>자동 확정</b>(선택 불필요) · ✋ 파란 <b>[직접 선택]</b> 항목만 고르면 됩니다.</div>`;
+    // ① 환불 조건: 요청일 기준 자동 확정 → 가벼운 한 줄 스트립
     if(er){
-      h+=`<div class="sect"><h3>환불 조건 <span class="hchip auto">자동</span> <span class="h3sub">(입력 날짜로 자동 확정)</span></h3>
-        <div class="determined">
-          <span class="det-badge ${er.rec==='within7'?'full':'partial'}">${er.rec==='within7'?'전액 환불':'부분 환불'}</span>
-          <span class="det-reason">${er.reason}</span>
-        </div></div>`;
+      const ri=refundInfo();
+      const isPartial = er.rec==='over7';
+      const meta = (ri)
+        ? (isPartial
+            ? `서비스 사용 ${ri.days}일차 · 환불 예정 <b>${won(ri.amount)}</b> <span style="color:var(--sub)">(잔여 ${ri.remain}일)</span>`
+            : `서비스 사용 ${ri.days}일차`)
+        : '';
+      h+=`<div class="fixline" style="margin-bottom:16px">
+          <span class="fixlabel">환불 조건 <span class="hchip fix">자동 확정</span></span>
+          <span class="det-badge ${isPartial?'partial':'full'}">${isPartial?'부분환불 대상자':'전액환불 대상자'}</span>
+          ${meta?`<span class="fixmeta">${meta}</span>`:''}
+        </div>`;
     }
-    // 세금계산서 상태: 직접 선택 (추천 표시)
+    // ② 세금계산서 상태: 추천 한 줄 + 직접 선택
     const at=auto?auto.timing:null;
-    const atInfo = auto?`<div class="recinfo">
-        <div class="recinfo-head">🕒 오늘 날짜 기준 자동 계산 <span class="recinfo-date">기준일 ${auto.req}</span></div>
-        <div class="recinfo-row"><span class="recinfo-k">추천 상태</span><span class="recinfo-v">${TIMING_LABEL[auto.timing].split(' (')[0]} <span class="recbadge">추천</span></span></div>
-        <div class="recinfo-row"><span class="recinfo-k">회계 마감 예정</span><span class="recinfo-v">${auto.close}</span></div>
-        <div class="recinfo-note">발행 상태 구간은 <b>결제일</b> 기준이며, 지금 어느 구간인지(추천)와 회계 마감일은 <b>오늘 날짜로 자동 계산</b>된 값입니다. 5영업일 계산은 주말만 반영하므로, 공휴일이 낀 달은 실제 마감일을 확인해 아래에서 직접 선택하세요.</div>
-      </div>`:'';
-    h+=`<div class="sect"><h3>세금계산서 발행 상태를 선택하세요 <span class="hchip select">선택</span></h3>${atInfo}
+    const atInfo = auto?`<div class="reclite">💡 추천 <b>${TIMING_LABEL[auto.timing].split(' (')[0]}</b> · 회계 마감 ${auto.close} <span class="muted">(오늘 ${auto.req} 기준·참고용, 공휴일 낀 달은 마감일 확인)</span></div>`:'';
+    h+=`<div class="sect"><h3>세금계산서 발행 상태 <span class="hchip select">직접 선택</span></h3>
+      ${atInfo}
       <div class="opts">
         ${optHTML(state.timing==='before','before','timing','발행 전','결제 당월 ~ 익월 1일 23:59', at==='before')}
         ${optHTML(state.timing==='confirmed','confirmed','timing','발행 확정 · 회계 마감 전','익월 2일 ~ 5영업일 15시', at==='confirmed')}
         ${optHTML(state.timing==='closed','closed','timing','회계 마감 후','익월 5영업일 15시 이후', at==='closed')}
       </div></div>`;
-    if(state.timing==='confirmed'){
-      h+=`<div class="sect"><h3>취소 범위</h3>
+    if(state.timing==='before' || state.timing==='confirmed'){
+      h+=`<div class="sect"><h3>결제 취소 여부 <span class="hchip select">직접 선택</span></h3>
         <div class="opts">
-          ${optHTML(state.intent==='proofOnly','proofOnly','intent','증빙(세금계산서)만 취소','결제는 유지')}
-          ${optHTML(state.intent==='both','both','intent','결제 취소 + 증빙 취소','결제 취소 완료 포함')}
+          ${optHTML(state.intent==='proofOnly','proofOnly','intent','결제는 유지 · 세금계산서(증빙)만 취소','결제 취소 없이 증빙만 취소 원함')}
+          ${optHTML(state.intent==='both','both','intent','결제 취소 + 증빙 취소','이미 취소했거나 취소 예정인 경우 포함')}
         </div></div>`;
     }
     h+=`<div class="btnrow"><button class="act ghost" onclick="goToPage(2)">← 이전</button>
@@ -664,6 +819,7 @@ function buildSummary(r){
   L.push('  · 카드결제 증빙중복 문의(케이스1): '+(s.case1==='yes'?'예'+(s.case1still==='yes'?' → 1차답변 후에도 취소 희망':''):'아니오'));
   L.push('  · 서비스 시작일: '+(s.serviceStart||'-')+' / 결제일: '+(s.paymentDate||'-')+' / 요청 접수일: '+(s.requestDate|| (a?a.req:'오늘')));
   L.push('  · 환불 조건: '+(s.elapsed==='within7'?'7일 이내(전액환불, 기간연장 선결제 포함)':s.elapsed==='over7'?'8일 이상 경과(부분환불)':'-'));
+  if(s.elapsed==='over7'){ const ri=refundInfo(); if(ri) L.push('  · 환불 예정 금액: '+won(ri.amount)+' (서비스 사용 '+ri.days+'일차 · 잔여 '+ri.remain+'일 · 34,900원 기준)'); }
   if(s.intent) L.push('  · 취소 범위: '+(s.intent==='proofOnly'?'증빙만 취소':'결제취소+증빙취소'));
   L.push('  · 세금계산서 발행 상태: '+(r.timingLabel||'-'));
   if(a) L.push('  · 회계 마감일(결제일 기준): '+a.close);
@@ -795,11 +951,20 @@ async function renderStats(){
 
   const real=logs.filter(l=>l.mode==='real'), test=logs.filter(l=>l.mode==='test');
   const realEsc=real.filter(l=>l.escalate).length;
+  const ansCnt=real.length-realEsc;
+  const escPct=real.length?(realEsc/real.length*100):0, ansPct=real.length?(ansCnt/real.length*100):0;
   document.getElementById('statCards').innerHTML=`
-    <div class="stat"><div class="n">${real.length}</div><div class="l">실제 응대 총건</div></div>
-    <div class="stat"><div class="n">${realEsc}</div><div class="l">실제 이관 건</div></div>
-    <div class="stat"><div class="n">${real.length-realEsc}</div><div class="l">실제 CS 답변 종결</div></div>
-    <div class="stat"><div class="n" style="color:var(--warn)">${test.length}</div><div class="l">테스트 (통계 제외)</div></div>`;
+    <div class="total-card">
+      <div class="tl">실제 응대 총건 <span style="font-weight:400;color:var(--sub)">(= 이관 + CS 답변 종결)</span></div>
+      <div class="total-n">${real.length}건</div>
+      <div class="total-eq"><span class="dot" style="background:#e08600"></span>이관 <b style="color:#e08600">${realEsc}</b>건 &nbsp;+&nbsp; <span class="dot" style="background:#16a06a"></span>CS 답변 종결 <b style="color:#16a06a">${ansCnt}</b>건 &nbsp;=&nbsp; <b>${real.length}</b>건</div>
+      ${real.length?`<div class="split-bar"><span class="sb-esc" style="width:${escPct}%"></span><span class="sb-ans" style="width:${ansPct}%"></span></div>`:''}
+    </div>
+    <div class="stat-grid">
+      <div class="stat esc"><div class="n">${realEsc}</div><div class="l"><span class="dot" style="background:#e08600"></span>이관 건</div></div>
+      <div class="stat ans"><div class="n">${ansCnt}</div><div class="l"><span class="dot" style="background:#16a06a"></span>CS 답변 종결 건</div></div>
+      <div class="stat test"><div class="n">${test.length}</div><div class="l">테스트 (통계 제외)</div></div>
+    </div>`;
   const byCase={};
   real.forEach(l=>{ const k=l.caseLabel+' · '+l.situation; byCase[k]=(byCase[k]||0)+1; });
   const rows=Object.entries(byCase).sort((a,b)=>b[1]-a[1]);
@@ -849,14 +1014,30 @@ function toggleMode(){
   if(document.getElementById('view-diag').classList.contains('hide')===false) renderWizard();
 }
 function showTab(t){
-  ['diag','stats','guide'].forEach(x=>{
+  ['diag','stats','guide','help','refund'].forEach(x=>{
     document.getElementById('view-'+x).classList.toggle('hide',x!==t);
     document.getElementById('tab-'+x).classList.toggle('active',x===t);
   });
   if(t==='stats') renderStats();
+  if(t==='refund') renderRefundTable();
+}
+function renderRefundTable(){
+  const ri=refundInfo();
+  document.getElementById('refundQuick').innerHTML = ri
+    ? `<div class="refund-box" style="margin-bottom:14px">현재 케이스: 서비스 사용 <b style="font-size:16px">${ri.days}일차</b> → 환불 예정 <b>${won(ri.amount)}</b> <span class="rf-sub">(잔여 ${ri.remain}일)</span></div>`
+    : `<div class="hint" style="margin:0 0 12px 0">진단 탭에서 결제일·서비스 시작일을 입력하면, 현재 케이스의 사용일차가 여기에 표시됩니다.</div>`;
+  let rows='';
+  for(let d=1; d<=REFUND_TOTAL; d++){
+    const amt=refundByDays(d), full=d<=7;
+    const hl = ri && ri.days===d ? ' style="background:#fff3d6;font-weight:700"' : '';
+    rows+=`<tr${hl}><td>${d}일차</td><td>${REFUND_TOTAL-d}일</td><td>${full?'<span class="pill r" style="margin-right:6px">전액</span>':''}${won(amt)}</td></tr>`;
+  }
+  document.getElementById('refundTable').innerHTML=
+    '<tr><th>서비스 사용일수</th><th>잔여일수</th><th>최종 취소/환불 금액</th></tr>'+rows;
 }
 function resetAll(){ const m=state.mode; resetState(); state.mode=m; location.hash=''; renderWizard(); window.scrollTo({top:0,behavior:'smooth'}); }
 function renderEscalation(){ /* 체크박스 변경 시 요약에 반영됨 - 별도 렌더 불필요 */ }
+function jumpG(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function copyText(txt,msg){
   navigator.clipboard.writeText(txt).then(()=>toast(msg||'복사됨')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
@@ -867,32 +1048,100 @@ let toastT;
 function toast(m){ const el=document.getElementById('toast'); el.textContent=m; el.classList.add('show');
   clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200); }
 
-/* 가이드 원문 */
+/* 가이드 원문 (첨부 '정산 CS 가이드 (수정안)' 반영) */
 document.getElementById('guideBody').innerHTML=`
-  <h2 style="margin-top:0">세금계산서 취소/정산 CS 가이드</h2>
-  <h3>1. 가이드 정의</h3>
-  <h4>프리미엄메일 취소/환불 조건 (서비스 시작일 기준)</h4>
-  <ul class="clean"><li><b>7일 이내:</b> 전액 환불</li><li><b>8일째 이상 경과:</b> 일할 계산하여 부분 환불</li></ul>
-  <div class="box"><b>기간연장 결제 포함 안내</b><br>기간연장 결제는 기존 서비스 만료일 30일 전부터 진행 가능. <b>서비스 시작일 이전에 미리 결제한 기간연장분도 전액환불 대상</b>이며, 서비스 시작일부터 7일 이내는 무료(전액)환불, 8일째부터 부분환불 조건입니다.</div>
+  <h2 style="margin-top:0">세금계산서 취소/정산 CS 가이드 (수정안)</h2>
+  <div class="toc">
+    <div class="toc-title">목차 <span style="font-weight:400;color:var(--sub);font-size:12.5px">— 항목을 누르면 해당 위치로 이동합니다</span></div>
+    <ol>
+      <li><a onclick="jumpG('g1')">가이드 정의</a></li>
+      <li><a onclick="jumpG('g2')">확인 순서</a></li>
+      <li><a onclick="jumpG('g3')">케이스별 대응 가이드</a>
+        <ul>
+          <li><a onclick="jumpG('gc1')"><span class="casen">케이스 1.</span> 카드 결제 건이라 세금계산서 발급 취소 요청하는 경우</a></li>
+          <li><a onclick="jumpG('gc2')"><span class="casen">케이스 2.</span> 결제 후 7일 이내 유저 (전액 환불 기간)가 세금계산서 취소를 요청하는 경우</a></li>
+          <li><a onclick="jumpG('gc3')"><span class="casen">케이스 3.</span> 결제 후 7일 경과 유저 (부분 환불 기간)가 세금계산서 취소를 요청하는 경우</a></li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+
+  <h3 id="g1">1. 가이드 정의</h3>
+  <h4>프리미엄메일 취소/환불 조건</h4>
+  <ul class="clean">
+    <li><b>7일 이내:</b> 전액 환불</li>
+    <li><b>7일 경과:</b> 일할 계산하여 부분 환불</li>
+  </ul>
   <h4>세금계산서 상태 및 회계 마감 일정 (결제일 기준)</h4>
-  <div class="box"><b>발행 전</b> (결제 당월 1일 ~ 익월 1일 23:59)<br>시스템 데이터 전송 전이므로 세금계산서 신청의 자동 취소(발행 중단)가 가능한 기간</div>
-  <div class="box"><b>발행 확정 및 회계 마감 전</b> (익월 2일 ~ 익월 5영업일 15시)<br>매월 2일 재무팀 ERP(SAP)로 데이터 전송 완료되어 원본 세금계산서 발행 확정. 이 기간 취소 건은 무조건 원본이 발행되며 이후 (-) 세금계산서로 상계 처리</div>
-  <div class="box"><b>회계 마감 후</b> (익월 5영업일 15시 이후 ~ 익월 6영업일 경과)<br>회계 마감 완료</div>
-  <h3>2. 확인 순서</h3>
-  <ul class="clean"><li><b>케이스 1 파악:</b> 카드 결제건인데 세금계산서 발급되어 증빙 중복 발행으로 취소 요청한 건인지 가장 먼저 확인</li>
-  <li><b>케이스 2·3 파악:</b> 카드결제 여부와 무관하게 발행 취소를 원하면 <b>서비스 시작일 기준</b> 경과일(7일 이내 전액 / 8일째 이상 부분)을 확인하여 환불 금액 여부 파악 (기간연장 선결제분은 전액환불)</li></ul>
-  <h3>3. 케이스별 대응 가이드</h3>
-  <h4>케이스 1. 카드 결제 건이라 세금계산서 발급 취소 요청</h4>
-  <p>다음메일은 카드매출전표를 발행하지 않음에도 증빙 중복발행을 우려한 문의가 매우 많음. 1차 답변 후에도 취소 희망 시 케이스에 따라 기획자에 이관.</p>
+  <ol class="clean">
+    <li><b>발행 전</b> (결제 당월 1일 ~ 익월 1일 23:59까지): 시스템 데이터 전송 전이므로 세금계산서 신청의 자동 취소(발행 중단)가 가능한 기간</li>
+    <li><b>발행 확정 및 회계 마감 전</b> (익월 2일 ~ 익월 5영업일 15시까지): 매월 2일 재무팀 ERP(SAP)로 데이터 전송이 완료되어 원본 세금계산서 발행이 확정된 상태. 이 기간의 취소 건은 무조건 원본 세금계산서가 발행되며, 이후 마이너스(-) 세금계산서로 상계(취소) 처리 진행</li>
+    <li><b>회계 마감 후</b> (익월 5영업일 15시 이후 ~ 익월 6영업일 경과): 회계 마감 완료</li>
+  </ol>
+
+  <h3 id="g2">2. 확인 순서</h3>
+  <ol class="clean">
+    <li><b>케이스 1 파악:</b> 카드 결제건인데 세금계산서 발급되어 증빙 중복 발행으로 취소 요청한 건인지 가장 먼저 확인 필요</li>
+    <li><b>케이스 2, 3 파악:</b> 카드 결제 여부와 상관없이 발행 취소를 진행하고자 한다면, 유저의 결제 경과일(7일 이내/경과)을 확인하여 환불 금액 여부 파악</li>
+  </ol>
+
+  <h3 id="g3">3. 케이스별 대응 가이드</h3>
+
+  <h4 class="case" id="gc1">케이스 1. 카드 결제 건이라 세금계산서 발급 취소 요청하는 경우</h4>
+  <p>다음메일에서는 카드매출전표 발행을 지원하지 않고 있음에도 카드 결제건에 대해 증빙 중복발행을 우려하여 취소 요청하시는 문의가 매우 많습니다. 이에 아래와 같이 1차 답변 후에도 세금계산서 발행 취소 희망하는 경우 케이스에 따라 답변 필요하기 때문에 기획자에 이관합니다.</p>
+  <p><span class="lbl">CS 스크립트</span></p>
   <div class="box">"고객님, 세금계산서는 직접 신청하신 경우에 발행되며 매출신고이기 때문에 모든 거래유형에 지원하고 있습니다. 이에 카드결제 시에도 증빙이 중복 발행되지 않도록 카드매출전표는 발행하지 않고 있어 고객님은 발행된 세금계산서로 매출 증빙이 가능하시고, 카드매출전표는 발행되지 않으셨습니다."</div>
-  <h4>케이스 2. 결제 후 7일 이내 (전액 환불 기간)</h4>
-  <p><b>[상황 A] 발행 전:</b> 결제 취소 시 전액 환불 & 세금계산서 자동 취소 안내<br>
-  <b>[상황 B] 발행확정·마감 전</b> — ① 증빙만 취소: 결제취소 없이 증빙만 취소 가능(결제정보·사업자등록증 확인→기획자 이관→재무팀 상신) / ② 결제취소+증빙취소: 결제 취소일 기준 익월 초 (-) 발행 예정 안내(기획자 별도조치 없음)<br>
-  <b>[상황 C] 마감 후:</b> 회계 마감되어 결제 취소해야 증빙 취소 진행, 이미 취소 포함 결제 취소일 기준 익월 초 (-) 발행</p>
-  <h4>케이스 3. 결제 후 7일 경과 (부분 환불 기간)</h4>
-  <p><b>[상황 A] 발행 전:</b> 결제취소 없이 증빙만 취소 가능(결제정보·사업자등록증 확인→기획자 이관). 기획자: 반드시 결제 당월까지 DB 취소 & CS tool 건별과세 반영 개발자 요청 / 재무팀 슬랙 공유<br>
-  <b>[상황 B] 발행확정·마감 전</b> — ① 증빙만 취소: 마감 전이므로 결제취소 없이 발행취소 가능(확인→이관→재무팀 상신) / ② 결제취소+증빙취소: 대체 증빙 발행 회신 시 취소 가능. 미요청 시 결제취소일 기준 익월 초 사용분만큼 수정 발행. 카드사/PG사에서 타 증빙 발급 안내<br>
-  <b>[상황 C] 마감 후:</b> 원칙상 결제취소 없이 취소 불가. 강성 유저 — 결제취소 선행 후 사용금액 타 증빙 발행·회신 시 취소 가능. 타증빙+사업자등록증 회신 시 기획자 이관→재무팀 상신</p>
+
+  <h4 class="case" id="gc2">케이스 2. 결제 후 7일 이내 유저 (전액 환불 기간)가 세금계산서 취소를 요청하는 경우</h4>
+  <div class="sit">[상황 A] 발행 전 요청 (결제 당월 ~ 익월 1일)</div>
+  <p><span class="lbl">가이드:</span> 결제 취소 시, 전액 환불되며 세금계산서 신청 자동 취소됨으로 안내</p>
+  <p><span class="lbl">CS 스크립트</span></p>
+  <div class="box">"고객님, 결제 취소를 진행하시면 세금계산서 발급 신청도 자동으로 함께 취소 처리됩니다."</div>
+  <div class="sit">[상황 B] 발행 확정 및 마감 전 요청 (익월 2일 ~ 익월 5영업일 15시 전)</div>
+  <p><b>① 결제 취소 없이 증빙 취소만 진행하고자 할 경우:</b> 결제취소 없이, 증빙만 취소 가능함으로 안내</p>
+  <ul class="clean">
+    <li><span class="lbl">고객센터:</span> 결제정보 및 사업자등록증 확인하여 기획자에 이관</li>
+    <li><span class="lbl">기획자:</span> 재무팀 전달(내용 공유 및 세금계산서 발행 취소 요청서 상신)</li>
+  </ul>
+  <p><b>② 결제 취소(취소 완료 포함) &amp; 증빙 취소하고자 할 경우:</b></p>
+  <ul class="clean">
+    <li><span class="lbl">고객센터:</span> 결제 취소 진행하시면 결제 취소일(세법상 계약해제일) 기준 익월 초에 (-) 발행될 예정 안내</li>
+    <li><span class="lbl">기획자:</span> 별도 조치 없음</li>
+  </ul>
+  <div class="sit">[상황 C] 마감 후 요청 (익월 5영업일 15시 이후 ~)</div>
+  <p><span class="lbl">가이드:</span> 회계 마감되어 결제 취소하셔야 증빙 취소 진행되며, 이미 취소하신 경우를 포함하여 결제 취소일(세법상 계약해제일) 기준 익월 초에 (-) 발행</p>
+
+  <h4 class="case" id="gc3">케이스 3. 결제 후 7일 경과 유저 (부분 환불 기간)가 세금계산서 취소를 요청하는 경우</h4>
+  <p>부분 환불을 진행하지 않고 계속 사용 희망하는 경우가 주로 해당함</p>
+  <div class="sit">[상황 A] 발행 전 요청 (결제 당월 ~ 익월 1일)</div>
+  <p><span class="lbl">가이드:</span> 아직 발행 전이므로 결제취소 없이 증빙만 취소 가능함 안내</p>
+  <ul class="clean">
+    <li><span class="lbl">고객센터:</span> 결제정보 및 사업자등록증 확인하여 기획자에 이관</li>
+    <li><span class="lbl">기획자:</span> (*반드시 결제 당월까지) DB에서 세금계산서 요청 취소 및 CS tool 내 건별과세로 반영되도록 개발자 요청 / 재무팀에 슬랙 통해 내용 공유</li>
+  </ul>
+  <div class="sit">[상황 B] 발행 확정 및 마감 전 요청 (익월 2일 ~ 익월 5영업일 15시 전)</div>
+  <p><b>① 결제 취소 없이 증빙 취소만 진행하고자 할 경우:</b> 회계 마감 전이므로, 결제 취소 없이 발행 취소 가능함 안내</p>
+  <ul class="clean">
+    <li><span class="lbl">고객센터:</span> 결제정보 및 사업자등록증 확인하여 기획자에 이관</li>
+    <li><span class="lbl">기획자:</span> 재무팀 전달(내용 공유 및 세금계산서 발행 취소 요청서 상신)</li>
+  </ul>
+  <p><b>② 결제 취소(취소 완료 포함) &amp; 증빙 취소하고자 할 경우:</b> 대체 증빙 발행하여 회신 시 증빙 취소 가능. 증빙 취소 요청하지 않을 경우 결제 취소일(세법상 계약해제일) 기준 익월 초에 사용분만큼 수정 발행 예정 안내</p>
+  <ul class="clean">
+    <li><span class="lbl">고객센터 안내 가이드:</span> 사용금액에 대해 직접 카드사/PG사에서 타 증빙(카드매출전표 등)을 발급받아 회신하시도록 안내</li>
+  </ul>
+  <p><span class="lbl">CS 스크립트</span></p>
+  <div class="box">"고객님, 현재 세금계산서 발행이 진행되었습니다. 증빙 취소를 원하실 경우 원본 발행 이후 마이너스(-) 처리를 거쳐야 하며, 타 증빙(카드매출전표 등)으로 대체를 원하실 경우 결제하신 카드사나 PG사를 통해 직접 타 증빙을 발급받아 회신해 주셔야 처리가 가능합니다."</div>
+  <ul class="clean">
+    <li><span class="lbl">기획자:</span> 재무팀 전달(내용 공유 및 세금계산서 발행 취소 요청서 상신)</li>
+  </ul>
+  <div class="sit">[상황 C] 마감 후 요청 (익월 5영업일 15시 이후 ~)</div>
+  <p><span class="lbl">1차 안내:</span> 회계 마감되어 원칙상 결제 취소 없이 세금계산서 발행 취소 불가능함 안내</p>
+  <p><span class="lbl">강성 유저 대응:</span> 세금계산서를 완전히 취소하려면 결제 취소 선행 후, 사용금액에 대해 타 증빙 발행 후 회신주시면 취소 가능. 결제취소 후 별도 요청 없으실 경우, 결제 취소일(세법상 계약해제일) 기준 익월 초에 사용분만큼 수정 발행 예정 안내</p>
+  <ul class="clean">
+    <li>타증빙 발행 방법은 결제하신 카드사 또는 PG사로 직접 문의 필요</li>
+    <li>유저가 타 증빙 확보 후 '사업자등록증'과 함께 회신 시, 기획자에 이관</li>
+    <li><span class="lbl">기획자:</span> 재무팀 전달(내용 공유 및 세금계산서 발행 취소 요청서 상신)</li>
+  </ul>
 `;
 
 /* init */
