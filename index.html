@@ -304,7 +304,7 @@
   <section id="view-refund" class="hide">
     <div class="card">
       <h2 style="margin:0 0 4px;font-size:20px">서비스 사용일자별 최종 취소/환불 금액</h2>
-      <p style="color:var(--sub);margin:0 0 12px;font-size:13.5px">상품가 <b>34,900원</b> 기준 · 환불액 = 결제금액 − (결제금액 × 사용일수 ÷ 365), 공제액 원 미만 절사 · 사용일수 = 서비스 시작일 ~ 환불일(당일 포함).<br>
+      <p style="color:var(--sub);margin:0 0 12px;font-size:13.5px">상품가 <b>34,900원</b> 기준 · 환불액 = 결제금액 − (결제금액 × 사용일수 ÷ 365), 소수점은 환불액 기준 올림 · 사용일수 = 서비스 시작일 ~ 환불일(당일 포함).<br>
         <b>결제 후 7일 이내(7일째 포함)</b>이거나 <b>서비스 시작 전(대기중)</b>이면 사용일수와 무관하게 <b>전액 환불</b>입니다. 아래 금액은 <b>결제 7일 경과 + 서비스 시작 후</b>에만 적용됩니다.</p>
       <div id="refundQuick"></div>
       <div style="max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px">
@@ -485,13 +485,13 @@ function recommendElapsed(){
 
 /* =========================================================
    부분환불 일할 계산 (상품가 34,900원 · 365일 기준)
-   환불액 = 결제금액 − floor(결제금액 × 사용일수 ÷ 365)
-   · 예: 사용 3일 → 34,900 − floor(286.84) = 34,614원
-   · 윤년 포함 항상 365일 기준 (확정) / 공제액 원 미만 절사(사례상 추정, 확인 필요)
+   환불액 = 결제금액 − (결제금액 × 사용일수 ÷ 365), 소수점은 환불액 기준 올림
+   · 예: 사용 3일 → 34,900 − 286.84 = 34,613.15 → 34,614원
+   · 윤년 포함 항상 365일 기준
 ========================================================= */
 const REFUND_PRICE=34900, REFUND_TOTAL=365;
 function refundByDays(days){ if(days<=0) return REFUND_PRICE; if(days>=REFUND_TOTAL) return 0;
-  return REFUND_PRICE - Math.floor(REFUND_PRICE*days/REFUND_TOTAL); }
+  return Math.ceil(REFUND_PRICE*(REFUND_TOTAL-days)/REFUND_TOTAL); }
 function refundInfo(){
   const er=recommendElapsed(); if(!er) return null;
   const days=Math.min(er.useDays, REFUND_TOTAL);
