@@ -304,7 +304,8 @@
   <section id="view-refund" class="hide">
     <div class="card">
       <h2 style="margin:0 0 4px;font-size:20px">서비스 사용일자별 최종 취소/환불 금액</h2>
-      <p style="color:var(--sub);margin:0 0 12px;font-size:13.5px">상품가 <b>34,900원</b> 기준 · 일할 금액 95.62원(34,900÷365) · 소수점 무조건 올림. <b>1~7일차는 전액 환불</b>, 8일차부터 일할 계산됩니다.</p>
+      <p style="color:var(--sub);margin:0 0 12px;font-size:13.5px">상품가 <b>34,900원</b> 기준 · 환불액 = 결제금액 − (결제금액 × 사용일수 ÷ 365), 공제액 원 미만 절사 · 사용일수 = 서비스 시작일 ~ 환불일(당일 포함).<br>
+        <b>결제 후 7일 이내(7일째 포함)</b>이거나 <b>서비스 시작 전(대기중)</b>이면 사용일수와 무관하게 <b>전액 환불</b>입니다. 아래 금액은 <b>결제 7일 경과 + 서비스 시작 후</b>에만 적용됩니다.</p>
       <div id="refundQuick"></div>
       <div style="max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px">
         <table id="refundTable"></table>
@@ -335,7 +336,7 @@
       </div></div>
       <div class="hstep"><div class="hnum">3</div><div class="hbody">
         <span class="ht">상태 확인</span>
-        환불 여부(전액/부분)는 문의 접수일 기준으로 자동 확정되어 회색으로 표시됩니다(선택 불필요). 부분환불이면 환불 예정 금액도 함께 나옵니다. 세금계산서 발행 상태를 직접 선택하고, 발행 전·마감 전이면 결제 취소 여부까지 선택한 뒤 [결과 보기]를 누릅니다.
+        환불 여부(전액/부분)는 결제일·서비스 시작일·문의 접수일로 자동 확정되어 회색으로 표시됩니다(선택 불필요). 부분환불이면 환불 예정 금액도 함께 나옵니다. 세금계산서 발행 상태를 직접 선택하고, 발행 전·마감 전이면 결제 취소 여부까지 선택한 뒤 [결과 보기]를 누릅니다.
       </div></div>
 
       <h3>2. 결과 화면 활용</h3>
@@ -454,37 +455,49 @@ function computeTiming(paymentStr, requestStr){
 }
 
 /* =========================================================
-   환불 조건(전액/부분) 자동 추천 — 서비스 시작일 기준
-   · 서비스 시작일부터 7일 이내: 전액환불 (케이스2)
-   · 서비스 시작일 전 미리 결제한 기간연장분: 전액환불 (케이스2)
-   · 서비스 시작 8일째부터: 부분환불 (케이스3)
+   환불 조건(전액/부분) 자동 판정 — 결제일 + 서비스 시작일 기준
+   (프리미엄메일 기간연장 환불 규칙, 실제 환불 사례 기준 2026-11-04 확인)
+   · 결제일로부터 7일 이내(결제일=1일째, 7일째 포함): 대기중/사용중 무관 전액환불 (케이스2)
+   · 결제 7일 경과 + 서비스 시작 전(대기중, 사용일수 0): 전액환불 (케이스2)
+   · 결제 7일 경과 + 서비스 시작 후(사용중): 일할 차감 부분환불 (케이스3)
+   → 부분환불은 '결제 7일 경과'와 '서비스 시작일 도래'를 모두 충족할 때만 발생
+   ※ 기간연장은 기존 이용기간 만료 다음날 시작 → 시작일은 항상 결제일보다 뒤
 ========================================================= */
+const DAY_MS=86400000;
+function dayDiff(from,to){ return Math.round((new Date(to+'T00:00:00')-new Date(from+'T00:00:00'))/DAY_MS); }
+function refundDays(){
+  if(!state.paymentDate || !state.serviceStart) return null;
+  const req=state.requestDate||todayStr();
+  const payDay=dayDiff(state.paymentDate,req)+1;             // 결제일 = 1일째
+  const useDays=Math.max(0, dayDiff(state.serviceStart,req)+1); // 시작일~환불일 당일 포함, 시작 전이면 0
+  return { payDay, useDays, waiting: useDays===0 };
+}
 function recommendElapsed(){
-  if(!state.serviceStart) return null;
-  const start=new Date(state.serviceStart+'T00:00:00');
-  const req=new Date((state.requestDate||todayStr())+'T00:00:00');
-  const diff=Math.floor((req-start)/86400000); // 일 단위
-  let rec, reason, prepay=false;
-  if(diff<0){ rec='within7'; prepay=true; reason='문의 접수일이 서비스 시작일 이전 → 기간연장 선결제분, 전액환불 대상'; }
-  else if(diff<7){ rec='within7'; reason=`서비스 시작 ${diff+1}일차 (7일 이내) → 전액환불 대상`; }
-  else{ rec='over7'; reason=`서비스 시작 ${diff+1}일차 (8일 이상 경과) → 부분환불 대상`; }
-  return { rec, reason, prepay };
+  const d=refundDays(); if(!d) return null;
+  const { payDay, useDays, waiting } = d;
+  const useTxt = waiting ? '서비스 시작 전(대기중)' : `서비스 사용 ${useDays}일째(사용중)`;
+  let rec, reason;
+  if(payDay<=7){ rec='within7'; reason=`결제 ${payDay}일째 (7일 이내) · ${useTxt} → 전액환불 대상`; }
+  else if(waiting){ rec='within7'; reason=`결제 ${payDay}일째 (7일 경과) · ${useTxt} → 사용일수 0, 전액환불 대상`; }
+  else{ rec='over7'; reason=`결제 ${payDay}일째 (7일 경과) · ${useTxt} → 일할 차감 부분환불 대상`; }
+  return { rec, reason, prepay:waiting, payDay, useDays, waiting };
 }
 
 /* =========================================================
    부분환불 일할 계산 (상품가 34,900원 · 365일 기준)
-   · 1~7일차: 전액 34,900원  · 8일차~: ceil(잔여일수 × 일할)  · 365일차: 0원
+   환불액 = 결제금액 − floor(결제금액 × 사용일수 ÷ 365)
+   · 예: 사용 3일 → 34,900 − floor(286.84) = 34,614원
+   · 확인 필요: 윤년에도 365로 나누는지 / 공제액 원 미만 절사 여부(사례상 절사로 추정)
 ========================================================= */
 const REFUND_PRICE=34900, REFUND_TOTAL=365;
-function refundByDays(days){ if(days<=7) return REFUND_PRICE; if(days>=REFUND_TOTAL) return 0;
-  return Math.ceil((REFUND_TOTAL-days)*(REFUND_PRICE/REFUND_TOTAL)); }
+function refundByDays(days){ if(days<=0) return REFUND_PRICE; if(days>=REFUND_TOTAL) return 0;
+  return REFUND_PRICE - Math.floor(REFUND_PRICE*days/REFUND_TOTAL); }
 function refundInfo(){
-  if(!state.serviceStart) return null;
-  const start=new Date(state.serviceStart+'T00:00:00');
-  const req=new Date((state.requestDate||todayStr())+'T00:00:00');
-  let days=Math.floor((req-start)/86400000)+1; // 서비스 시작일 = 1일차
-  if(days<1) days=1; if(days>REFUND_TOTAL) days=REFUND_TOTAL;
-  return { days, remain:REFUND_TOTAL-days, amount:refundByDays(days) };
+  const er=recommendElapsed(); if(!er) return null;
+  const days=Math.min(er.useDays, REFUND_TOTAL);
+  const full = er.rec==='within7';
+  return { days, payDay:er.payDay, waiting:er.waiting, full,
+    remain:REFUND_TOTAL-days, amount: full ? REFUND_PRICE : refundByDays(days) };
 }
 function won(n){ return '₩'+Number(n).toLocaleString('ko-KR'); }
 
@@ -511,7 +524,7 @@ function computeResult(s){
   const c1note = s.case1==='yes' ? '※ 카드 증빙중복 1차 안내 후에도 취소를 계속 희망하여 실제 처리 단계로 진행된 건. ' : '';
 
   const caseNo = s.elapsed==='within7' ? 2 : 3;
-  const caseTitle = caseNo===2 ? '전액 환불 기간 (결제 후 7일 이내)' : '부분 환불 기간 (8일 이상 경과)';
+  const caseTitle = caseNo===2 ? '전액 환불 대상 (결제 후 7일 이내 또는 서비스 시작 전)' : '부분 환불 대상 (결제 7일 경과 + 서비스 시작 후)';
   const t = s.timing;
   const timingLabel = TIMING_LABEL[t];
   const CHK = ['결제 정보(결제일·결제수단·금액)','사업자등록증'];
@@ -664,10 +677,10 @@ function renderWizard(){
       · 환불 조건: ${refundLine}<br>
       · 세금계산서 상태: ${timingLine}</div>`;
     const prepayNote = (er&&er.prepay)
-      ? `<div class="warnnote" style="margin-top:10px">서비스 시작일 이전에 미리 결제한 <b>기간연장 선결제분</b>으로 전액환불 대상입니다. (기간연장 결제는 기존 서비스 만료일 30일 전부터 가능)</div>` : '';
+      ? `<div class="warnnote" style="margin-top:10px">서비스 시작 전(운영툴 <b>'대기중'</b>)인 <b>기간연장 결제분</b>으로, 결제 후 7일이 지났더라도 사용일수 0 → <b>전액환불</b> 대상입니다. (기간연장은 기존 이용기간 만료 다음날 시작)</div>` : '';
     h+=`<div class="card">
       <div class="q"><span class="stepnum">1</span>고객 결제 정보를 입력해 주세요.</div>
-      <div class="hint">환불 조건은 <b>서비스 시작일</b>, 세금계산서 상태는 <b>결제일</b> 기준으로 계산됩니다. 두 날짜를 모두 입력한 뒤 [다음]을 눌러 주세요.</div>
+      <div class="hint">환불 조건은 <b>결제일 + 서비스 시작일</b>(결제 7일 경과 여부 · 서비스 시작 여부), 세금계산서 상태는 <b>결제일</b> 기준으로 계산됩니다. 두 날짜를 모두 입력한 뒤 [다음]을 눌러 주세요.</div>
       <div class="daterow">
         <div class="field"><label>결제일 *</label><input type="date" value="${state.paymentDate}" onchange="setDate('paymentDate',this.value)"></div>
         <div class="field"><label>서비스 시작일 * <button class="minibtn" onclick="sameAsPayment()">결제일과 동일</button></label><input type="date" value="${state.serviceStart}" onchange="setDate('serviceStart',this.value)"></div>
@@ -720,8 +733,8 @@ function renderWizard(){
       const isPartial = er.rec==='over7';
       const meta = (ri)
         ? (isPartial
-            ? `서비스 사용 ${ri.days}일차 · 환불 예정 <b>${won(ri.amount)}</b> <span style="color:var(--sub)">(잔여 ${ri.remain}일)</span>`
-            : `서비스 사용 ${ri.days}일차`)
+            ? `결제 ${ri.payDay}일째 · 서비스 사용 ${ri.days}일째 · 환불 예정 <b>${won(ri.amount)}</b> <span style="color:var(--sub)">(잔여 ${ri.remain}일)</span>`
+            : `결제 ${ri.payDay}일째 · ${ri.waiting?'서비스 시작 전(대기중)':'서비스 사용 '+ri.days+'일째'} · 환불 예정 <b>${won(ri.amount)}</b>`)
         : '';
       h+=`<div class="fixline" style="margin-bottom:16px">
           <span class="fixlabel">환불 조건 <span class="hchip fix">자동 확정</span></span>
@@ -884,8 +897,8 @@ function buildSummary(r){
   L.push('■ 케이스 입력값');
   L.push('  · 카드결제 증빙중복 문의(케이스1): '+(s.case1==='yes'?'예'+(s.case1still==='yes'?' → 1차답변 후에도 취소 희망':''):'아니오'));
   L.push('  · 서비스 시작일: '+(s.serviceStart||'-')+' / 결제일: '+(s.paymentDate||'-')+' / 문의 접수일: '+(s.requestDate|| (a?a.req:'오늘')));
-  L.push('  · 환불 조건: '+(s.elapsed==='within7'?'7일 이내(전액환불, 기간연장 선결제 포함)':s.elapsed==='over7'?'8일 이상 경과(부분환불)':'-'));
-  if(s.elapsed==='over7'){ const ri=refundInfo(); if(ri) L.push('  · 환불 예정 금액: '+won(ri.amount)+' (서비스 사용 '+ri.days+'일차 · 잔여 '+ri.remain+'일 · 34,900원 기준)'); }
+  L.push('  · 환불 조건: '+(s.elapsed==='within7'?'전액환불 (결제 7일 이내 또는 서비스 시작 전·대기중)':s.elapsed==='over7'?'부분환불 (결제 7일 경과 + 서비스 시작 후)':'-'));
+  { const ri=refundInfo(); if(ri) L.push('  · 환불 예정 금액: '+won(ri.amount)+' (결제 '+ri.payDay+'일째 · '+(ri.waiting?'서비스 시작 전':'서비스 사용 '+ri.days+'일째')+' · 34,900원 기준)'); }
   if(s.intent) L.push('  · 취소 범위: '+(s.intent==='proofOnly'?'증빙만 취소':'결제취소+증빙취소'));
   L.push('  · 세금계산서 발행 상태: '+(r.timingLabel||'-'));
   if(a) L.push('  · 회계 마감일(결제일 기준): '+a.close);
@@ -1091,13 +1104,13 @@ function showTab(t){
 function renderRefundTable(){
   const ri=refundInfo();
   document.getElementById('refundQuick').innerHTML = ri
-    ? `<div class="refund-box" style="margin-bottom:14px">현재 케이스: 서비스 사용 <b style="font-size:16px">${ri.days}일차</b> → 환불 예정 <b>${won(ri.amount)}</b> <span class="rf-sub">(잔여 ${ri.remain}일)</span></div>`
-    : `<div class="hint" style="margin:0 0 12px 0">진단 탭에서 결제일·서비스 시작일을 입력하면, 현재 케이스의 사용일차가 여기에 표시됩니다.</div>`;
+    ? `<div class="refund-box" style="margin-bottom:14px">현재 케이스: 결제 ${ri.payDay}일째 · ${ri.waiting?'서비스 시작 전(대기중)':'서비스 사용 <b style="font-size:16px">'+ri.days+'일째</b>'} → 환불 예정 <b>${won(ri.amount)}</b> <span class="rf-sub">${ri.full?'(전액환불 대상 · 아래 표 미적용)':'(잔여 '+ri.remain+'일)'}</span></div>`
+    : `<div class="hint" style="margin:0 0 12px 0">진단 탭에서 결제일·서비스 시작일을 입력하면, 현재 케이스의 환불 예정 금액이 여기에 표시됩니다.</div>`;
   let rows='';
   for(let d=1; d<=REFUND_TOTAL; d++){
-    const amt=refundByDays(d), full=d<=7;
-    const hl = ri && ri.days===d ? ' style="background:#fff3d6;font-weight:700"' : '';
-    rows+=`<tr${hl}><td>${d}일차</td><td>${REFUND_TOTAL-d}일</td><td>${full?'<span class="pill r" style="margin-right:6px">전액</span>':''}${won(amt)}</td></tr>`;
+    const amt=refundByDays(d);
+    const hl = ri && !ri.full && ri.days===d ? ' style="background:#fff3d6;font-weight:700"' : '';
+    rows+=`<tr${hl}><td>${d}일</td><td>${REFUND_TOTAL-d}일</td><td>${won(amt)}</td></tr>`;
   }
   document.getElementById('refundTable').innerHTML=
     '<tr><th>서비스 사용일수</th><th>잔여일수</th><th>최종 취소/환불 금액</th></tr>'+rows;
@@ -1129,8 +1142,8 @@ document.getElementById('guideBody').innerHTML=`
       <li><a onclick="jumpG('g3')">케이스별 대응 가이드</a>
         <ul>
           <li><a onclick="jumpG('gc1')"><span class="casen">케이스 1.</span> 카드 결제 건이라 세금계산서 발급 취소 요청하는 경우</a></li>
-          <li><a onclick="jumpG('gc2')"><span class="casen">케이스 2.</span> 결제 후 7일 이내 유저 (전액 환불 기간)가 세금계산서 취소를 요청하는 경우</a></li>
-          <li><a onclick="jumpG('gc3')"><span class="casen">케이스 3.</span> 결제 후 7일 경과 유저 (부분 환불 기간)가 세금계산서 취소를 요청하는 경우</a></li>
+          <li><a onclick="jumpG('gc2')"><span class="casen">케이스 2.</span> 전액 환불 대상 유저 (결제 후 7일 이내 또는 서비스 시작 전)가 세금계산서 취소를 요청하는 경우</a></li>
+          <li><a onclick="jumpG('gc3')"><span class="casen">케이스 3.</span> 부분 환불 대상 유저 (결제 7일 경과 + 서비스 시작 후)가 세금계산서 취소를 요청하는 경우</a></li>
         </ul>
       </li>
     </ol>
@@ -1139,9 +1152,16 @@ document.getElementById('guideBody').innerHTML=`
   <h3 id="g1">1. 가이드 정의</h3>
   <h4>프리미엄메일 취소/환불 조건</h4>
   <ul class="clean">
-    <li><b>7일 이내:</b> 전액 환불</li>
-    <li><b>7일 경과:</b> 일할 계산하여 부분 환불</li>
+    <li><b>결제 후 7일 이내 (7일째 포함):</b> 대기중·사용중 관계없이 전액 환불</li>
+    <li><b>결제 7일 경과 · 서비스 시작 전 (대기중):</b> 전액 환불 (사용일수 0)</li>
+    <li><b>결제 7일 경과 후 서비스가 시작된 경우:</b> 일할 계산하여 부분 환불<br>
+      환불액 = 결제금액 − (결제금액 × 사용일수 ÷ 365) · 사용일수 = 서비스 시작일 ~ 환불일 (당일 포함)</li>
   </ul>
+  <div class="gnote"><b>참고 · 기간연장 결제</b><br>기간연장은 기존 이용기간 만료 다음날 시작되므로 서비스 시작일은 항상 결제일보다 뒤이며, 시작일 전까지는 운영툴에 <b>'대기중'</b>으로 표기됩니다. 따라서 부분 환불은 <b>'결제 7일 경과'와 '서비스 시작일 도래'를 모두 충족할 때만</b> 발생합니다.<br>
+    <span style="color:var(--sub)">사례 (결제금액 34,900원)</span><br>
+    · 06-23 결제 / 07-07 시작 / 07-03 환불 (결제 11일째, 대기중) → 34,900원 전액<br>
+    · 10-29 결제 / 10-31 시작 / 11-04 환불 (결제 7일째, 사용중) → 34,900원 전액<br>
+    · 10-26 결제 / 11-02 시작 / 11-04 환불 (결제 10일째, 사용 3일) → 34,614원 부분 환불</div>
   <h4>세금계산서 상태 및 회계 마감 일정 (결제일 기준)</h4>
   <ol class="clean">
     <li><b>발행 전</b> (결제 당월 1일 ~ 익월 1일 23:59까지): 시스템 데이터 전송 전이므로 세금계산서 신청의 자동 취소(발행 중단)가 가능한 기간</li>
@@ -1152,7 +1172,7 @@ document.getElementById('guideBody').innerHTML=`
   <h3 id="g2">2. 확인 순서</h3>
   <ol class="clean">
     <li><b>케이스 1 파악:</b> 카드 결제건인데 세금계산서 발급되어 증빙 중복 발행으로 취소 요청한 건인지 가장 먼저 확인 필요</li>
-    <li><b>케이스 2, 3 파악:</b> 카드 결제 여부와 상관없이 발행 취소를 진행하고자 한다면, 유저의 결제 경과일(7일 이내/경과)을 확인하여 환불 금액 여부 파악</li>
+    <li><b>케이스 2, 3 파악:</b> 카드 결제 여부와 상관없이 발행 취소를 진행하고자 한다면, 유저의 결제 경과일(7일 이내/경과)과 서비스 시작 여부(대기중/사용중)를 확인하여 환불 금액 여부 파악</li>
   </ol>
 
   <h3 id="g3">3. 케이스별 대응 가이드</h3>
@@ -1163,7 +1183,7 @@ document.getElementById('guideBody').innerHTML=`
   <p><span class="lbl">CS 스크립트</span></p>
   <div class="box">"고객님, 세금계산서는 직접 신청하신 경우에 발행되며 매출신고이기 때문에 모든 거래유형에 지원하고 있습니다. 이에 카드결제 시에도 증빙이 중복 발행되지 않도록 카드매출전표는 발행하지 않고 있어 고객님은 발행된 세금계산서로 매출 증빙이 가능하시고, 카드매출전표는 발행되지 않으셨습니다."</div>
 
-  <h4 class="case" id="gc2">케이스 2. 결제 후 7일 이내 유저 (전액 환불 기간)가 세금계산서 취소를 요청하는 경우</h4>
+  <h4 class="case" id="gc2">케이스 2. 전액 환불 대상 유저 (결제 후 7일 이내 또는 서비스 시작 전)가 세금계산서 취소를 요청하는 경우</h4>
   <div class="sit">[상황 A] 발행 전 요청 (결제 당월 ~ 익월 1일)</div>
   <p><span class="lbl">가이드:</span> 결제 취소 시, 전액 환불되며 세금계산서 신청 자동 취소됨으로 안내</p>
   <p><span class="lbl">CS 스크립트</span></p>
@@ -1182,7 +1202,7 @@ document.getElementById('guideBody').innerHTML=`
   <div class="sit">[상황 C] 마감 후 요청 (익월 5영업일 15시 이후 ~)</div>
   <p><span class="lbl">가이드:</span> 회계 마감되어 결제 취소하셔야 증빙 취소 진행되며, 이미 취소하신 경우를 포함하여 결제 취소일(세법상 계약해제일) 기준 익월 초에 (-) 발행</p>
 
-  <h4 class="case" id="gc3">케이스 3. 결제 후 7일 경과 유저 (부분 환불 기간)가 세금계산서 취소를 요청하는 경우</h4>
+  <h4 class="case" id="gc3">케이스 3. 부분 환불 대상 유저 (결제 7일 경과 + 서비스 시작 후)가 세금계산서 취소를 요청하는 경우</h4>
   <p>부분 환불을 진행하지 않고 계속 사용 희망하는 경우가 주로 해당함</p>
   <div class="sit">[상황 A] 발행 전 요청 (결제 당월 ~ 익월 1일)</div>
   <p><span class="lbl">가이드:</span> 아직 발행 전이므로 결제취소 없이 증빙만 취소 가능함 안내</p>
