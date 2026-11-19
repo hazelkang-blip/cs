@@ -42,7 +42,8 @@ async function readBody(req) {
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL
+    || process.env.STORAGE_URL || process.env.STORAGE_DATABASE_URL;
   if (!url) return res.status(503).json({ ok: false, error: 'not_configured' });
 
   try {
